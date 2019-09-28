@@ -151,7 +151,10 @@
     <string name="permission_location_need_content">After that, MokoScanner could search the wifi</string>
     <string name="mqtt_app_username"><![CDATA[iot_plug_https_test_app&a1iOTRs8KwG]]></string>
     <string name="mqtt_device_username"><![CDATA[iot_plug_https_test_device1&a1iOTRs8KwG]]></string>
-
+    <string name="about_moko_url">http://doc.mokotechnology.com/index.php?s=/Home/Item/show/item_id/2</string>
+    <string name="version_info">Version:%s</string>
+    <string name="about_moko_name">MOKO TECHNOLOGY LTD.</string>
+    <string name="company_website">www.mokosmart.com</string>
     <string-array name="update_type">
         <item>Firmware</item>
         <item>CA certification</item>

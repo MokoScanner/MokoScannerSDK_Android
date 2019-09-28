@@ -70,4 +70,6 @@ dependencies {
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.10'
     implementation 'com.github.lzyzsd:circleprogress:1.2.1'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.59'
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
+    implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.30'
 }

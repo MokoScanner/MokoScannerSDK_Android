@@ -88,15 +88,12 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
 
     private MQTTConfig mqttConfig;
 
-    private String function;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mqtt_device);
         ButterKnife.bind(this);
         String mqttConfigStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        function = getIntent().getExtras().getString("function");
 
         if (TextUtils.isEmpty(mqttConfigStr)) {
             mqttConfig = new MQTTConfig();
@@ -280,17 +277,17 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
             return;
         }
         mqttConfig.topicPublish = topicPublish;
-        if ("iot_plug".equals(function)) {
-            Intent intent = new Intent(this, AddMokoPlugActivity.class);
-            intent.putExtra("function", function);
-            intent.putExtra("mqttConfig", mqttConfig);
-            startActivity(intent);
-        } else if ("iot_wall_switch".equals(function)) {
-            Intent intent = new Intent(this, AddWallSwitchActivity.class);
-            intent.putExtra("function", function);
-            intent.putExtra("mqttConfig", mqttConfig);
-            startActivity(intent);
-        }
+//        if ("iot_plug".equals(function)) {
+//            Intent intent = new Intent(this, AddMokoPlugActivity.class);
+//            intent.putExtra("function", function);
+//            intent.putExtra("mqttConfig", mqttConfig);
+//            startActivity(intent);
+//        } else if ("iot_wall_switch".equals(function)) {
+//            Intent intent = new Intent(this, AddWallSwitchActivity.class);
+//            intent.putExtra("function", function);
+//            intent.putExtra("mqttConfig", mqttConfig);
+//            startActivity(intent);
+//        }
 
 
 //        String mqttConfigStr = new Gson().toJson(mqttConfig, MQTTConfig.class);
