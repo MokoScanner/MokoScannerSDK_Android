@@ -27,23 +27,7 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan" />
         <activity
-            android:name="com.moko.scanner.activity.SelectDeviceTypeActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.AddMokoPlugActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.SettingsActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
             android:name="com.moko.scanner.activity.SetDeviceMqttActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.OperationPlugStepsActivity"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan" />
         <activity
@@ -54,48 +38,7 @@
             android:name="com.moko.scanner.activity.ModifyNameActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name="com.moko.scanner.activity.MokoPlugDetailActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.ElectricityActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.MoreActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.DeviceInfoActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
             android:name="com.moko.scanner.activity.AboutActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.CheckFirmwareUpdateActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.AddWallSwitchActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.WallSwitchDetailActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.OperationWallSwitchStepsActivity"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.PowerStatusActivity"
-            android:launchMode="singleTop"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan" />
-        <activity
-            android:name="com.moko.scanner.activity.CompanyActivity"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan" />
         <activity android:name=".activity.ScannerDeviceActivity"

@@ -3,12 +3,22 @@ package com.moko.scanner.activity;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.annotation.IdRes;
 import android.support.v4.content.ContextCompat;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -18,16 +28,39 @@ import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.github.lzyzsd.circleprogress.DonutProgress;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.moko.scanner.AppConstants;
 import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
+import com.moko.scanner.db.DBTools;
+import com.moko.scanner.dialog.CustomDialog;
 import com.moko.scanner.dialog.KeepAliveDialog;
 import com.moko.scanner.entity.MQTTConfig;
+import com.moko.scanner.entity.MokoDevice;
+import com.moko.scanner.entity.MsgCommon;
 import com.moko.scanner.fragment.OnewaySSLFragment;
 import com.moko.scanner.fragment.TwowaySSLFragment;
+import com.moko.scanner.service.MokoBlueService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
+import com.moko.support.MokoConstants;
+import com.moko.support.MokoSupport;
+import com.moko.support.entity.OrderEnum;
+import com.moko.support.entity.OrderTaskResponse;
+import com.moko.support.event.ConnectStatusEvent;
+import com.moko.support.log.LogModule;
+
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.lang.reflect.Type;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -88,13 +121,32 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
 
     private MQTTConfig mqttConfig;
 
+    private String mSelectedDeviceMac;
+    private String mSelectedDeviceName;
+    private MokoBlueService mMokoService;
+    private boolean mReceiverTag = false;
+
+
+    private CustomDialog wifiAlertDialog;
+    private CustomDialog mqttConnDialog;
+    private DonutProgress donutProgress;
+    private String mWifiSSID;
+    private String mWifiPassword;
+    private boolean isSettingSuccess;
+    private boolean isDeviceConnectSuccess;
+    private MQTTConfig mAppMqttConfig;
+    private File mFile;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mqtt_device);
         ButterKnife.bind(this);
         String mqttConfigStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-
+        mSelectedDeviceMac = getIntent().getStringExtra(MokoConstants.EXTRA_KEY_SELECTED_DEVICE_MAC);
+        mSelectedDeviceName = getIntent().getStringExtra(MokoConstants.EXTRA_KEY_SELECTED_DEVICE_NAME);
+        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
+        mAppMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
         if (TextUtils.isEmpty(mqttConfigStr)) {
             mqttConfig = new MQTTConfig();
         } else {
@@ -119,6 +171,317 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
 //        IntentFilter filter = new IntentFilter();
 //        filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
 //        registerReceiver(mReceiver, filter);
+        bindService(new Intent(this, MokoBlueService.class), mServiceConnection, BIND_AUTO_CREATE);
+        EventBus.getDefault().register(this);
+    }
+
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mMokoService = ((MokoBlueService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MokoConstants.ACTION_ORDER_RESULT);
+            filter.addAction(MokoConstants.ACTION_ORDER_TIMEOUT);
+            filter.addAction(MokoConstants.ACTION_ORDER_FINISH);
+            filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+            filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
+            filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
+            filter.setPriority(100);
+            registerReceiver(mReceiver, filter);
+            mReceiverTag = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+        }
+    };
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null) {
+                String action = intent.getAction();
+                if (MokoConstants.ACTION_ORDER_TIMEOUT.equals(action)) {
+                    syncError();
+                    OrderTaskResponse response = (OrderTaskResponse) intent.getSerializableExtra(MokoConstants.EXTRA_KEY_RESPONSE_ORDER_TASK);
+                    OrderEnum order = response.order;
+                    switch (order) {
+
+                    }
+                }
+                if (MokoConstants.ACTION_ORDER_FINISH.equals(action)) {
+
+                }
+                if (MokoConstants.ACTION_ORDER_RESULT.equals(action)) {
+                    OrderTaskResponse response = (OrderTaskResponse) intent.getSerializableExtra(MokoConstants.EXTRA_KEY_RESPONSE_ORDER_TASK);
+                    OrderEnum order = response.order;
+//                    int responseType = response.responseType;
+//                    byte[] value = response.responseValue;
+                    switch (order) {
+                        case WRITE_HOST_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setHost(mqttConfig.host));
+                            break;
+                        case WRITE_HOST:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setPort(Integer.parseInt(mqttConfig.port)));
+                            break;
+                        case WRITE_PORT:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setSession(mqttConfig.cleanSession ? 1 : 0));
+                            break;
+                        case WRITE_SESSION:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setDeviceIdSum(mqttConfig.uniqueId));
+                            break;
+                        case WRITE_DEVICE_ID_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setDeviceId(mqttConfig.uniqueId));
+                            break;
+                        case WRITE_DEVICE_ID:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setClientIdSum(mqttConfig.clientId));
+                            break;
+                        case WRITE_CLIENT_ID_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setClientId(mqttConfig.clientId));
+                            break;
+                        case WRITE_CLIENT_ID:
+                            if (!TextUtils.isEmpty(mqttConfig.username)) {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setUsernameSum(mqttConfig.username));
+                            } else if (!TextUtils.isEmpty(mqttConfig.password)) {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setPasswordSum(mqttConfig.password));
+                            } else {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setKeepAlive(mqttConfig.keepAlive));
+                            }
+                            break;
+                        case WRITE_USERNAME_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setUsername(mqttConfig.username));
+                            break;
+                        case WRITE_USERNAME:
+                            if (!TextUtils.isEmpty(mqttConfig.password)) {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setPasswordSum(mqttConfig.password));
+                            } else {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setKeepAlive(mqttConfig.keepAlive));
+                            }
+                            break;
+                        case WRITE_PASSWORD_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setPassword(mqttConfig.password));
+                            break;
+                        case WRITE_PASSWORD:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setKeepAlive(mqttConfig.keepAlive));
+                            break;
+                        case WRITE_KEEPALIVE:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setQos(mqttConfig.qos));
+                            break;
+                        case WRITE_QOS:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setConnectMode(mqttConfig.connectMode == 3 ? 2 : mqttConfig.connectMode));
+                            break;
+                        case WRITE_CONNECTMODE:
+                            if (mqttConfig.connectMode == 0 || (mqttConfig.connectMode > 0 && TextUtils.isEmpty(mqttConfig.caPath))) {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setPublishSum(mqttConfig.topicPublish));
+                            } else {
+                                // ssl
+                                mFile = new File(mqttConfig.caPath);
+                                MokoSupport.getInstance().sendOrder(mMokoService.setCASum((int) mFile.length()));
+                            }
+                            break;
+                        case WRITE_CA_PACKAGE_SUM:
+                            if (mFile != null && mFile.exists()) {
+                                try {
+                                    FileInputStream inputSteam = new FileInputStream(mFile);
+                                    byte[] buffer = new byte[(int) mFile.length()];
+                                    inputSteam.read(buffer);
+                                    MokoSupport.getInstance().sendOrder(mMokoService.setCA(buffer));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    syncError();
+                                }
+                            } else {
+                                syncError();
+                            }
+                            break;
+                        case WRITE_CA:
+                            if (mqttConfig.connectMode > 1) {
+                                // 双向验证
+                                mFile = new File(mqttConfig.clientCertPath);
+                                MokoSupport.getInstance().sendOrder(mMokoService.setClientCertSum((int) mFile.length()));
+                            } else {
+                                MokoSupport.getInstance().sendOrder(mMokoService.setPublishSum(mqttConfig.topicPublish));
+                            }
+                            break;
+                        case WRITE_CLIENTCERT_PACKAGE_SUM:
+                            if (mFile != null && mFile.exists()) {
+                                try {
+                                    FileInputStream inputSteam = new FileInputStream(mFile);
+                                    byte[] buffer = new byte[(int) mFile.length()];
+                                    inputSteam.read(buffer);
+                                    MokoSupport.getInstance().sendOrder(mMokoService.setClientCert(buffer));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    syncError();
+                                }
+                            } else {
+                                syncError();
+                            }
+                            break;
+                        case WRITE_CLIENTCERT:
+                            mFile = new File(mqttConfig.clientKeyPath);
+                            MokoSupport.getInstance().sendOrder(mMokoService.setClientPrivateSum((int) mFile.length()));
+                            break;
+                        case WRITE_CLIENTPRIVATE_PACKAGE_SUM:
+                            if (mFile != null && mFile.exists()) {
+                                try {
+                                    FileInputStream inputSteam = new FileInputStream(mFile);
+                                    byte[] buffer = new byte[(int) mFile.length()];
+                                    inputSteam.read(buffer);
+                                    MokoSupport.getInstance().sendOrder(mMokoService.setClientPrivate(buffer));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    syncError();
+                                }
+                            } else {
+                                syncError();
+                            }
+                            break;
+                        case WRITE_CLIENTPRIVATE:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setPublishSum(mqttConfig.topicPublish));
+                            break;
+                        case WRITE_PUBLISH_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setPublish(mqttConfig.topicPublish));
+                            break;
+                        case WRITE_PUBLISH:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setSubscribeSum(mqttConfig.topicSubscribe));
+                            break;
+                        case WRITE_SUBSCRIBE_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setSubscribe(mqttConfig.topicSubscribe));
+                            break;
+                        case WRITE_SUBSCRIBE:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setStaNameSum(mWifiSSID));
+                            break;
+                        case WRITE_STA_NAME_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setStaName(mWifiSSID));
+                            break;
+                        case WRITE_STA_NAME:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setStaPasswordSum(mWifiPassword));
+                            break;
+                        case WRITE_STA_PASSWORD_PACKAGE_SUM:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setStaPassword(mWifiPassword));
+                            break;
+                        case WRITE_STA_PASSWORD:
+                            MokoSupport.getInstance().sendOrder(mMokoService.setStartConnect());
+                            break;
+                        case WRITE_START_CONNECT:
+                            // 完成配置，断开蓝牙
+                            mMokoService.disConnectBle();
+                            // 弹出加载弹框
+                            showConnMqttDialog();
+                            break;
+                    }
+                }
+                if (action.equals(MokoConstants.ACTION_MQTT_CONNECTION)) {
+                    int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_CONNECTION_STATE, 0);
+                    if (state == MokoConstants.MQTT_CONN_STATUS_SUCCESS && isSettingSuccess) {
+                        LogModule.i("连接MQTT成功");
+                        // 订阅设备主题
+//                    String topicSwitchState = mTopicPre + "switch_state";
+//                    String topicDelayTime = mTopicPre + "delay_time";
+//                    String topicDeleteDevice = mTopicPre + "delete_device";
+//                    String topicElectricityInfo = mTopicPre + "electricity_information";
+                        // 订阅
+                        try {
+                            if (TextUtils.isEmpty(mAppMqttConfig.topicSubscribe)) {
+                                MokoSupport.getInstance().subscribe(mqttConfig.topicPublish, mAppMqttConfig.qos);
+                            }
+//                        MokoSupport.getInstance().subscribe(topicDelayTime, mAppMqttConfig.qos);
+//                        MokoSupport.getInstance().subscribe(topicDeleteDevice, mAppMqttConfig.qos);
+//                        MokoSupport.getInstance().subscribe(topicElectricityInfo, mAppMqttConfig.qos);
+                        } catch (MqttException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                if (action.equals(MokoConstants.ACTION_MQTT_RECEIVE)) {
+                    String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
+                    String receive = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE);
+                    if (TextUtils.isEmpty(topic) || isDeviceConnectSuccess) {
+                        return;
+                    }
+                    Type type = new TypeToken<MsgCommon<JsonObject>>() {
+                    }.getType();
+                    MsgCommon<JsonObject> msgCommon = new Gson().fromJson(receive, type);
+                    if (!mqttConfig.uniqueId.equals(msgCommon.id)) {
+                        return;
+                    }
+                    if (donutProgress == null)
+                        return;
+                    if (!isDeviceConnectSuccess) {
+                        isDeviceConnectSuccess = true;
+                        donutProgress.setProgress(100);
+                        donutProgress.setText(100 + "%");
+                        // 关闭进度条弹框，保存数据，跳转修改设备名称页面
+                        etMqttHost.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                dismissConnMqttDialog();
+                                MokoDevice mokoDevice = DBTools.getInstance(SetDeviceMqttActivity.this).selectDevice(mqttConfig.uniqueId);
+                                if (mokoDevice == null) {
+                                    mokoDevice = new MokoDevice();
+                                    mokoDevice.name = mSelectedDeviceName;
+                                    mokoDevice.nickName = mSelectedDeviceName;
+                                    mokoDevice.topicSubscribe = mqttConfig.topicSubscribe;
+                                    mokoDevice.topicPublish = mqttConfig.topicPublish;
+                                    mokoDevice.uniqueId = mqttConfig.uniqueId;
+                                    DBTools.getInstance(SetDeviceMqttActivity.this).insertDevice(mokoDevice);
+                                } else {
+                                    mokoDevice.name = mSelectedDeviceName;
+                                    mokoDevice.uniqueId = mqttConfig.uniqueId;
+                                    DBTools.getInstance(SetDeviceMqttActivity.this).updateDevice(mokoDevice);
+                                }
+                                Intent modifyIntent = new Intent(SetDeviceMqttActivity.this, ModifyNameActivity.class);
+                                modifyIntent.putExtra("mokodevice", mokoDevice);
+                                startActivity(modifyIntent);
+                            }
+                        }, 500);
+                    }
+                }
+                if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                    int blueState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 0);
+                    switch (blueState) {
+                        case BluetoothAdapter.STATE_TURNING_OFF:
+                            dismissConnMqttDialog();
+                            break;
+                    }
+                }
+            }
+        }
+    };
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onConnectStatusEvent(ConnectStatusEvent event) {
+        String action = event.getAction();
+        if (MokoConstants.ACTION_CONN_STATUS_DISCONNECTED.equals(action)) {
+            // 设备断开，通知页面更新
+//            dismissConnMqttDialog();
+            dismissLoadingProgressDialog();
+            ToastUtils.showToast(SetDeviceMqttActivity.this, "Disconnected");
+        }
+        if (MokoConstants.ACTION_DISCOVER_SUCCESS.equals(action)) {
+            // 设备连接成功，通知页面更新
+            etMqttHost.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    // 发送MQTT信息
+                    MokoSupport.getInstance().sendOrder(mMokoService.setHostSum(mqttConfig.host));
+                }
+            }, 1000);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mReceiverTag) {
+            unregisterReceiver(mReceiver);
+        }
+        unbindService(mServiceConnection);
+        EventBus.getDefault().unregister(this);
     }
 
     private void createFragment() {
@@ -278,7 +641,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         }
         mqttConfig.topicPublish = topicPublish;
 //        if ("iot_plug".equals(function)) {
-//            Intent intent = new Intent(this, AddMokoPlugActivity.class);
+//            Intent intent = new Intent(this, SetDeviceMqttActivity.class);
 //            intent.putExtra("function", function);
 //            intent.putExtra("mqttConfig", mqttConfig);
 //            startActivity(intent);
@@ -300,14 +663,14 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
 //                startService(new Intent(SetDeviceMqttActivity.this, MokoService.class));
 //            }
 //        }, 2000);
-
+        if ("{device_name}/{device_id}/app_to_device".equals(mqttConfig.topicSubscribe)) {
+            mqttConfig.topicSubscribe = String.format("%s/%s/app_to_device", mSelectedDeviceName, deviceId);
+        }
+        if ("{device_name}/{device_id}/device_to_app".equals(mqttConfig.topicPublish)) {
+            mqttConfig.topicPublish = String.format("%s/%s/device_to_app", mSelectedDeviceName, deviceId);
+        }
+        showWifiInputDialog();
     }
-
-//    @Override
-//    protected void onDestroy() {
-//        super.onDestroy();
-//        unregisterReceiver(mReceiver);
-//    }
 
     public void cleanSession(View view) {
         mqttConfig.cleanSession = !mqttConfig.cleanSession;
@@ -336,5 +699,106 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                 twowaySSLFragment.setClientCertPath(mqttConfig);
                 break;
         }
+    }
+
+
+    private InputFilter filter = new InputFilter() {
+        @Override
+        public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+            if (source.equals(" ") || source.toString().contentEquals("\n")) return "";
+            else return null;
+        }
+    };
+
+    private void showWifiInputDialog() {
+        View wifiInputView = LayoutInflater.from(this).inflate(R.layout.wifi_input_content, null);
+        final EditText etSSID = ButterKnife.findById(wifiInputView, R.id.et_ssid);
+        etSSID.setFilters(new InputFilter[]{filter});
+        final EditText etPassword = ButterKnife.findById(wifiInputView, R.id.et_password);
+        CustomDialog dialog = new CustomDialog.Builder(this)
+                .setContentView(wifiInputView)
+                .setPositiveButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setNegativeButton(R.string.confirm, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mWifiSSID = etSSID.getText().toString();
+                        // 获取WIFI后，连接成功后发给设备
+                        if (TextUtils.isEmpty(mWifiSSID)) {
+                            ToastUtils.showToast(SetDeviceMqttActivity.this, getString(R.string.wifi_verify_empty));
+                            return;
+                        }
+                        dialog.dismiss();
+                        mWifiPassword = etPassword.getText().toString();
+                        // 弹出加载弹框
+//                        showConnMqttDialog();
+                        showLoadingProgressDialog(getString(R.string.wait));
+                        mMokoService.connectBluetoothDevice(mSelectedDeviceMac);
+                    }
+                })
+                .create();
+        dialog.show();
+    }
+
+    private int progress;
+
+    private void showConnMqttDialog() {
+        isDeviceConnectSuccess = false;
+        View view = LayoutInflater.from(this).inflate(R.layout.mqtt_conn_content, null);
+        donutProgress = ButterKnife.findById(view, R.id.dp_progress);
+        mqttConnDialog = new CustomDialog.Builder(this)
+                .setContentView(view)
+                .create();
+        mqttConnDialog.setCancelable(false);
+        mqttConnDialog.show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                progress = 0;
+                while (progress <= 100 && !isDeviceConnectSuccess) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            donutProgress.setProgress(progress);
+                            donutProgress.setText(progress + "%");
+                        }
+                    });
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    progress++;
+                }
+            }
+        }).start();
+        mMokoService.mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isDeviceConnectSuccess) {
+                    isDeviceConnectSuccess = true;
+                    dismissConnMqttDialog();
+                    ToastUtils.showToast(SetDeviceMqttActivity.this, getString(R.string.mqtt_connecting_timeout));
+                }
+            }
+        }, 90 * 1000);
+    }
+
+    private void dismissConnMqttDialog() {
+        if (mqttConnDialog != null && !isFinishing() && mqttConnDialog.isShowing()) {
+            isDeviceConnectSuccess = true;
+            mqttConnDialog.dismiss();
+            mMokoService.mHandler.removeMessages(0);
+        }
+    }
+
+    private void syncError() {
+        isDeviceConnectSuccess = true;
+        dismissLoadingProgressDialog();
+        ToastUtils.showToast(this, "Error");
     }
 }

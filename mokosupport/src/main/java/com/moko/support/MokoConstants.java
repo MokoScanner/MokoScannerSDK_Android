@@ -16,6 +16,8 @@ public class MokoConstants {
     // extra_key
     public static final String EXTRA_KEY_RESPONSE_ORDER_TASK = "EXTRA_KEY_RESPONSE_ORDER_TASK";
     public static final String EXTRA_KEY_CURRENT_DATA_TYPE = "EXTRA_KEY_CURRENT_DATA_TYPE";
+    public static final String EXTRA_KEY_SELECTED_DEVICE_MAC = "EXTRA_KEY_SELECTED_DEVICE_MAC";
+    public static final String EXTRA_KEY_SELECTED_DEVICE_NAME = "EXTRA_KEY_SELECTED_DEVICE_NAME";
 
     public static final int HEADER_SEND = 0xEA;
     public static final int HEADER_RECEIVE = 0xEB;

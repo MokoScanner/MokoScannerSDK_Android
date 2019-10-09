@@ -19,6 +19,7 @@ import com.moko.scanner.R;
 import com.moko.scanner.adapter.DeviceInfoAdapter;
 import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.service.MokoBlueService;
+import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
 import com.moko.support.callback.MokoScanDeviceCallback;
 import com.moko.support.entity.DeviceInfo;
@@ -64,7 +65,6 @@ public class ScannerDeviceActivity extends BaseActivity implements MokoScanDevic
         Intent intent = new Intent(this, MokoBlueService.class);
         startService(intent);
         bindService(new Intent(this, MokoBlueService.class), mServiceConnection, BIND_AUTO_CREATE);
-        EventBus.getDefault().register(this);
     }
 
     private ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -87,6 +87,7 @@ public class ScannerDeviceActivity extends BaseActivity implements MokoScanDevic
         super.onDestroy();
         unbindService(mServiceConnection);
         EventBus.getDefault().unregister(this);
+        stopService(new Intent(this, MokoBlueService.class));
     }
 
 
@@ -195,7 +196,10 @@ public class ScannerDeviceActivity extends BaseActivity implements MokoScanDevic
                 MokoSupport.getInstance().stopScanDevice();
             }
             // 跳转配置页面
-            startActivity(new Intent(this, SetDeviceMqttActivity.class));
+            Intent intent = new Intent(this, SetDeviceMqttActivity.class);
+            intent.putExtra(MokoConstants.EXTRA_KEY_SELECTED_DEVICE_MAC, deviceInfo.mac);
+            intent.putExtra(MokoConstants.EXTRA_KEY_SELECTED_DEVICE_NAME, deviceInfo.name);
+            startActivity(intent);
         }
     }
 

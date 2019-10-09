@@ -23,14 +23,7 @@ public class MokoDevice implements Serializable {
     public int id;
     public String name;
     public String nickName;
-    public String switchName1;
-    public String switchName2;
-    public String switchName3;
-    public String function;
-    public String specifications;
-    public String deviceId;
     public String uniqueId;
-    public String type;
     public boolean on_off;
     public String company_name;
     public String production_date;
@@ -38,8 +31,5 @@ public class MokoDevice implements Serializable {
     public String firmware_version;
     public String topicPublish;
     public String topicSubscribe;
-    public boolean on_off_1;
-    public boolean on_off_2;
-    public boolean on_off_3;
     public boolean isOnline;
 }

@@ -27,8 +27,6 @@
             android:layout_marginLeft="15dp"
             android:layout_marginTop="5dp"
             android:layout_toRightOf="@id/iv_device"
-            android:drawablePadding="14dp"
-            android:drawableRight="@drawable/arrow_right"
             android:gravity="center_vertical"
             android:singleLine="true"
             android:text=""
@@ -36,7 +34,7 @@
             android:textSize="15sp" />
 
         <TextView
-            android:id="@+id/tv_device_switch"
+            android:id="@+id/tv_device_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignBottom="@id/iv_device"
@@ -50,8 +48,7 @@
     </RelativeLayout>
 
     <ImageView
-        android:id="@+id/iv_switch"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:src="@drawable/checkbox_open" />
+        android:src="@drawable/arrow_right" />
 </LinearLayout>

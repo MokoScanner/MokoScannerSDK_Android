@@ -73,7 +73,6 @@ public abstract class OrderTask {
                 if (timeoutPreTask()) {
                     MokoSupport.getInstance().pollTask();
                     callback.onOrderTimeout(response);
-                    MokoSupport.getInstance().executeTask(callback);
                 }
             }
         }
@@ -82,5 +81,9 @@ public abstract class OrderTask {
     public boolean timeoutPreTask() {
         LogModule.i(order.getOrderName() + "超时");
         return true;
+    }
+
+    public void assembleData(byte[] value) {
+
     }
 }

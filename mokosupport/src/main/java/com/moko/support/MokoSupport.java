@@ -306,7 +306,28 @@ public class MokoSupport implements MokoResponseCallback {
 
     @Override
     public void onCharacteristicWrite(byte[] value) {
-
+        if (isSyncData()) {
+            OrderTask orderTask = mQueue.peek();
+            if (value != null && value.length > 0 && orderTask != null) {
+                int header = value[0] & 0xff;
+                switch (header) {
+                    case 0x01:
+                    case 0x04:
+                    case 0x05:
+                    case 0x06:
+                    case 0x07:
+                    case 0x0B:
+                    case 0x0C:
+                    case 0x0D:
+                    case 0x0E:
+                    case 0x0F:
+                    case 0x31:
+                    case 0x32:
+                        orderTask.assembleData(value);
+                        break;
+                }
+            }
+        }
     }
 
     @Override
@@ -490,6 +511,18 @@ public class MokoSupport implements MokoResponseCallback {
                 mBluetoothGatt.readCharacteristic(mokoCharacteristic.characteristic);
             }
         });
+    }
+
+    // 发送自定义命令（无队列）
+    public void sendCustomOrder(OrderTask orderTask) {
+        final MokoCharacteristic mokoCharacteristic = mCharacteristicMap.get(orderTask.orderType);
+        if (mokoCharacteristic == null) {
+            LogModule.w("executeTask : mokoCharacteristic is null");
+            return;
+        }
+        if (orderTask.response.responseType == OrderTask.RESPONSE_TYPE_WRITE_NO_RESPONSE) {
+            sendWriteNoResponseOrder(orderTask, mokoCharacteristic);
+        }
     }
 
     /**

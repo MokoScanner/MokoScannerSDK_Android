@@ -14,6 +14,38 @@ import com.moko.support.entity.OrderTaskResponse;
 import com.moko.support.event.ConnectStatusEvent;
 import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.log.LogModule;
+import com.moko.support.task.OrderTask;
+import com.moko.support.task.ZWriteCASumTask;
+import com.moko.support.task.ZWriteCATask;
+import com.moko.support.task.ZWriteClientCertSumTask;
+import com.moko.support.task.ZWriteClientCertTask;
+import com.moko.support.task.ZWriteClientIdSumTask;
+import com.moko.support.task.ZWriteClientIdTask;
+import com.moko.support.task.ZWriteClientPrivateSumTask;
+import com.moko.support.task.ZWriteClientPrivateTask;
+import com.moko.support.task.ZWriteConnectModeTask;
+import com.moko.support.task.ZWriteDeviceIdSumTask;
+import com.moko.support.task.ZWriteDeviceIdTask;
+import com.moko.support.task.ZWriteHostSumTask;
+import com.moko.support.task.ZWriteHostTask;
+import com.moko.support.task.ZWriteKeepAliveTask;
+import com.moko.support.task.ZWritePasswordSumTask;
+import com.moko.support.task.ZWritePasswordTask;
+import com.moko.support.task.ZWritePortTask;
+import com.moko.support.task.ZWritePublishSumTask;
+import com.moko.support.task.ZWritePublishTask;
+import com.moko.support.task.ZWriteQosTask;
+import com.moko.support.task.ZWriteResetTask;
+import com.moko.support.task.ZWriteSessionTask;
+import com.moko.support.task.ZWriteStaNameSumTask;
+import com.moko.support.task.ZWriteStaNameTask;
+import com.moko.support.task.ZWriteStaPasswordSumTask;
+import com.moko.support.task.ZWriteStaPasswordTask;
+import com.moko.support.task.ZWriteStartConnectTask;
+import com.moko.support.task.ZWriteSubscribeSumTask;
+import com.moko.support.task.ZWriteSubscribeTask;
+import com.moko.support.task.ZWriteUsernameSumTask;
+import com.moko.support.task.ZWriteUsernameTask;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -134,5 +166,160 @@ public class MokoBlueService extends Service implements MokoConnStateCallback, M
         @Override
         protected void handleMessage(MokoBlueService service, Message msg) {
         }
+    }
+
+    public OrderTask setHostSum(String host) {
+        OrderTask orderTask = new ZWriteHostSumTask(this, host);
+        return orderTask;
+    }
+
+    public OrderTask setHost(String host) {
+        OrderTask orderTask = new ZWriteHostTask(this, host);
+        return orderTask;
+    }
+
+    public OrderTask setPort(int port) {
+        OrderTask orderTask = new ZWritePortTask(this, port);
+        return orderTask;
+    }
+
+    public OrderTask setSession(int session) {
+        OrderTask orderTask = new ZWriteSessionTask(this, session);
+        return orderTask;
+    }
+
+    public OrderTask setDeviceIdSum(String deviceId) {
+        OrderTask orderTask = new ZWriteDeviceIdSumTask(this, deviceId);
+        return orderTask;
+    }
+
+    public OrderTask setDeviceId(String deviceId) {
+        OrderTask orderTask = new ZWriteDeviceIdTask(this, deviceId);
+        return orderTask;
+    }
+
+    public OrderTask setClientIdSum(String clientId) {
+        OrderTask orderTask = new ZWriteClientIdSumTask(this, clientId);
+        return orderTask;
+    }
+
+    public OrderTask setClientId(String clientId) {
+        OrderTask orderTask = new ZWriteClientIdTask(this, clientId);
+        return orderTask;
+    }
+
+    public OrderTask setUsernameSum(String username) {
+        OrderTask orderTask = new ZWriteUsernameSumTask(this, username);
+        return orderTask;
+    }
+
+    public OrderTask setUsername(String username) {
+        OrderTask orderTask = new ZWriteUsernameTask(this, username);
+        return orderTask;
+    }
+
+    public OrderTask setPasswordSum(String password) {
+        OrderTask orderTask = new ZWritePasswordSumTask(this, password);
+        return orderTask;
+    }
+
+    public OrderTask setPassword(String password) {
+        OrderTask orderTask = new ZWritePasswordTask(this, password);
+        return orderTask;
+    }
+
+    public OrderTask setKeepAlive(int keepAlive) {
+        OrderTask orderTask = new ZWriteKeepAliveTask(this, keepAlive);
+        return orderTask;
+    }
+
+    public OrderTask setQos(int qos) {
+        OrderTask orderTask = new ZWriteQosTask(this, qos);
+        return orderTask;
+    }
+
+    public OrderTask setConnectMode(int connectMode) {
+        OrderTask orderTask = new ZWriteConnectModeTask(this, connectMode);
+        return orderTask;
+    }
+
+    public OrderTask setCASum(int dataLength) {
+        OrderTask orderTask = new ZWriteCASumTask(this, dataLength);
+        return orderTask;
+    }
+
+    public OrderTask setCA(byte[] fileBytes) {
+        OrderTask orderTask = new ZWriteCATask(this, fileBytes);
+        return orderTask;
+    }
+
+    public OrderTask setClientCertSum(int dataLength) {
+        OrderTask orderTask = new ZWriteClientCertSumTask(this, dataLength);
+        return orderTask;
+    }
+
+    public OrderTask setClientCert(byte[] fileBytes) {
+        OrderTask orderTask = new ZWriteClientCertTask(this, fileBytes);
+        return orderTask;
+    }
+
+    public OrderTask setClientPrivateSum(int dataLength) {
+        OrderTask orderTask = new ZWriteClientPrivateSumTask(this, dataLength);
+        return orderTask;
+    }
+
+    public OrderTask setClientPrivate(byte[] fileBytes) {
+        OrderTask orderTask = new ZWriteClientPrivateTask(this, fileBytes);
+        return orderTask;
+    }
+
+    public OrderTask setPublishSum(String publish) {
+        OrderTask orderTask = new ZWritePublishSumTask(this, publish);
+        return orderTask;
+    }
+
+    public OrderTask setPublish(String publish) {
+        OrderTask orderTask = new ZWritePublishTask(this, publish);
+        return orderTask;
+    }
+
+    public OrderTask setSubscribeSum(String subscribe) {
+        OrderTask orderTask = new ZWriteSubscribeSumTask(this, subscribe);
+        return orderTask;
+    }
+
+    public OrderTask setSubscribe(String subscribe) {
+        OrderTask orderTask = new ZWriteSubscribeTask(this, subscribe);
+        return orderTask;
+    }
+
+    public OrderTask setStaNameSum(String staName) {
+        OrderTask orderTask = new ZWriteStaNameSumTask(this, staName);
+        return orderTask;
+    }
+
+    public OrderTask setStaName(String staName) {
+        OrderTask orderTask = new ZWriteStaNameTask(this, staName);
+        return orderTask;
+    }
+
+    public OrderTask setStaPasswordSum(String staPassword) {
+        OrderTask orderTask = new ZWriteStaPasswordSumTask(this, staPassword);
+        return orderTask;
+    }
+
+    public OrderTask setStaPassword(String staPassword) {
+        OrderTask orderTask = new ZWriteStaPasswordTask(this, staPassword);
+        return orderTask;
+    }
+
+    public OrderTask setReset() {
+        OrderTask orderTask = new ZWriteResetTask(this);
+        return orderTask;
+    }
+
+    public OrderTask setStartConnect() {
+        OrderTask orderTask = new ZWriteStartConnectTask(this);
+        return orderTask;
     }
 }

@@ -49,29 +49,15 @@ public class DBOpenHelper extends SQLiteOpenHelper {
             // id
             + " (" + DBConstants.DEVICE_FIELD_ID
             + " INTEGER primary key autoincrement, "
-            // 功能
-            + DBConstants.DEVICE_FIELD_FUNCTION + " TEXT,"
             // 名字
             + DBConstants.DEVICE_FIELD_NAME + " TEXT,"
             // 昵称
             + DBConstants.DEVICE_FIELD_NICK_NAME + " TEXT,"
-            // 开关昵称
-            + DBConstants.DEVICE_FIELD_SWITCH_1 + " TEXT,"
-            // 开关昵称
-            + DBConstants.DEVICE_FIELD_SWITCH_2 + " TEXT,"
-            // 开关昵称
-            + DBConstants.DEVICE_FIELD_SWITCH_3 + " TEXT,"
-            // 规格
-            + DBConstants.DEVICE_FIELD_SPECIFICATIONS + " TEXT,"
-            // 类型
-            + DBConstants.DEVICE_FIELD_TYPE + " TEXT,"
             // 发布主题
             + DBConstants.DEVICE_FIELD_TOPIC_PUBLISH + " TEXT,"
             // 订阅主题
             + DBConstants.DEVICE_FIELD_TOPIC_SUBSCRIBE + " TEXT,"
             // 唯一标识
-            + DBConstants.DEVICE_FIELD_UNIQUE_ID + " TEXT,"
-            // 设备唯一标识
-            + DBConstants.DEVICE_FIELD_DEVICE_ID + " TEXT);";
+            + DBConstants.DEVICE_FIELD_UNIQUE_ID + " TEXT);";
 
 }
