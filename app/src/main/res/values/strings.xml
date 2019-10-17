@@ -14,7 +14,7 @@
     <string name="device_offline">Device offline,please check.</string>
     <string name="guide_center">Moko Scanner</string>
     <string name="guide_company_info">MOKO TECHNOLOGY LTD.</string>
-    <string name="main_welcome">Start your moko scanner</string>
+    <string name="main_welcome">Please add new device!</string>
     <string name="main_add_device">Add Devices</string>
     <string name="select_device_type">Select Device Type</string>
     <string name="select_device_moko_plug">Moko plug</string>
