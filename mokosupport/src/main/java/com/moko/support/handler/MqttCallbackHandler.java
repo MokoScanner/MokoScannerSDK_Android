@@ -17,6 +17,7 @@ import android.content.Intent;
 
 import com.moko.support.MokoConstants;
 import com.moko.support.log.LogModule;
+import com.moko.support.utils.MokoUtils;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -69,10 +70,10 @@ public class MqttCallbackHandler implements MqttCallbackExtended {
      */
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        LogModule.i(topic + "--->" + message.toString());
+        LogModule.i(topic + "--->" + MokoUtils.bytesToHexString(message.getPayload()));
         Intent intent = new Intent(MokoConstants.ACTION_MQTT_RECEIVE);
         intent.putExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC, topic);
-        intent.putExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE, message.toString());
+        intent.putExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE, message.getPayload());
         context.sendBroadcast(intent);
     }
 

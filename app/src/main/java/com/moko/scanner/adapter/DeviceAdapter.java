@@ -39,7 +39,7 @@ public class DeviceAdapter extends BaseAdapter<MokoDevice> {
     private void setView(DeviceViewHolder holder, final MokoDevice device) {
         if (!device.isOnline) {
             holder.tvDeviceStatus.setText(mContext.getString(R.string.device_state_offline));
-            holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(mContext, R.color.grey_cccccc));
+            holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(mContext, R.color.grey_b3b3b3));
         } else {
             holder.tvDeviceStatus.setText(mContext.getString(R.string.device_state_online));
             holder.tvDeviceStatus.setTextColor(ContextCompat.getColor(mContext, R.color.blue_0188cc));

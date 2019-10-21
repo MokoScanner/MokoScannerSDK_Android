@@ -79,8 +79,8 @@
     <string name="update_failed">Update Failed</string>
     <string name="switch_on">On</string>
     <string name="switch_off">Off</string>
-    <string name="device_state_offline">Offline</string>
-    <string name="device_state_online">Online</string>
+    <string name="device_state_offline">Off-line</string>
+    <string name="device_state_online">On-line</string>
     <string name="wifi_alert_title">Connect  to device\'s hotspot</string>
     <string name="wifi_alert_1_1">1.  Open"Setting</string>
     <string name="wifi_alert_1_2">> WLAN"</string>
@@ -155,6 +155,12 @@
     <string name="version_info">Version:%s</string>
     <string name="about_moko_name">MOKO TECHNOLOGY LTD.</string>
     <string name="company_website">www.mokosmart.com</string>
+    <string name="scan_device_name">Name:%s</string>
+    <string name="scan_device_mac">MAC:%s</string>
+    <string name="scan_device_rssi">RSSI:%ddBm</string>
+    <string name="scan_device_raw_data">Raw Data:%s</string>
+    <string name="scan_device_total">total:%d</string>
+    <string name="scan_filter_rssi">%ddBm</string>
     <string-array name="update_type">
         <item>Firmware</item>
         <item>CA certification</item>

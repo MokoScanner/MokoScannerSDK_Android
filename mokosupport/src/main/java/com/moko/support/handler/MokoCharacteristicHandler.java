@@ -20,7 +20,7 @@ import java.util.List;
 public class MokoCharacteristicHandler {
     private static MokoCharacteristicHandler INSTANCE;
 
-    public static final String SERVICE_UUID_HEADER = "000ff19";
+    public static final String SERVICE_UUID_HEADER = "0000ff19";
 
     public HashMap<OrderType, MokoCharacteristic> mokoCharacteristicMap;
 

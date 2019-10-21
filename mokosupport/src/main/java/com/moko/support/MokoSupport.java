@@ -28,6 +28,18 @@ import com.moko.support.handler.MqttCallbackHandler;
 import com.moko.support.log.LogModule;
 import com.moko.support.task.OpenNotifyTask;
 import com.moko.support.task.OrderTask;
+import com.moko.support.task.ZWriteCATask;
+import com.moko.support.task.ZWriteClientCertTask;
+import com.moko.support.task.ZWriteClientIdTask;
+import com.moko.support.task.ZWriteClientPrivateTask;
+import com.moko.support.task.ZWriteDeviceIdTask;
+import com.moko.support.task.ZWriteHostTask;
+import com.moko.support.task.ZWritePasswordTask;
+import com.moko.support.task.ZWritePublishTask;
+import com.moko.support.task.ZWriteStaNameTask;
+import com.moko.support.task.ZWriteStaPasswordTask;
+import com.moko.support.task.ZWriteSubscribeTask;
+import com.moko.support.task.ZWriteUsernameTask;
 import com.moko.support.utils.BleConnectionCompat;
 import com.moko.support.utils.MokoUtils;
 
@@ -72,7 +84,7 @@ public class MokoSupport implements MokoResponseCallback {
     private MokoConnStateCallback mMokoConnStateCallback;
     private HashMap<OrderType, MokoCharacteristic> mCharacteristicMap;
     private static final UUID DESCRIPTOR_UUID_NOTIFY = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
-    private static final UUID SERVICE_UUID = UUID.fromString("0000ffc3-0000-1000-8000-00805f9b34fb");
+    private static final UUID SERVICE_UUID = UUID.fromString("0000ff19-0000-1000-8000-00805f9b34fb");
 
     private static volatile MokoSupport INSTANCE;
 
@@ -307,23 +319,56 @@ public class MokoSupport implements MokoResponseCallback {
     @Override
     public void onCharacteristicWrite(byte[] value) {
         if (isSyncData()) {
-            OrderTask orderTask = mQueue.peek();
-            if (value != null && value.length > 0 && orderTask != null) {
+            if (value != null && value.length > 0) {
                 int header = value[0] & 0xff;
                 switch (header) {
                     case 0x01:
+                        ZWriteHostTask hostTask = (ZWriteHostTask) mQueue.peek();
+                        hostTask.assembleData(value);
+                        break;
                     case 0x04:
+                        ZWriteDeviceIdTask deviceIdTask = (ZWriteDeviceIdTask) mQueue.peek();
+                        deviceIdTask.assembleData(value);
+                        break;
                     case 0x05:
+                        ZWriteClientIdTask clientIdTask = (ZWriteClientIdTask) mQueue.peek();
+                        clientIdTask.assembleData(value);
+                        break;
                     case 0x06:
+                        ZWriteUsernameTask usernameTask = (ZWriteUsernameTask) mQueue.peek();
+                        usernameTask.assembleData(value);
+                        break;
                     case 0x07:
+                        ZWritePasswordTask passwordTask = (ZWritePasswordTask) mQueue.peek();
+                        passwordTask.assembleData(value);
+                        break;
                     case 0x0B:
+                        ZWriteCATask caTask = (ZWriteCATask) mQueue.peek();
+                        caTask.assembleData(value);
+                        break;
                     case 0x0C:
+                        ZWriteClientCertTask clientCertTask = (ZWriteClientCertTask) mQueue.peek();
+                        clientCertTask.assembleData(value);
+                        break;
                     case 0x0D:
+                        ZWriteClientPrivateTask clientPrivateTask = (ZWriteClientPrivateTask) mQueue.peek();
+                        clientPrivateTask.assembleData(value);
+                        break;
                     case 0x0E:
+                        ZWritePublishTask publishTask = (ZWritePublishTask) mQueue.peek();
+                        publishTask.assembleData(value);
+                        break;
                     case 0x0F:
+                        ZWriteSubscribeTask subscribeTask = (ZWriteSubscribeTask) mQueue.peek();
+                        subscribeTask.assembleData(value);
+                        break;
                     case 0x31:
+                        ZWriteStaNameTask staNameTask = (ZWriteStaNameTask) mQueue.peek();
+                        staNameTask.assembleData(value);
+                        break;
                     case 0x32:
-                        orderTask.assembleData(value);
+                        ZWriteStaPasswordTask staPasswordTask = (ZWriteStaPasswordTask) mQueue.peek();
+                        staPasswordTask.assembleData(value);
                         break;
                 }
             }
@@ -585,9 +630,9 @@ public class MokoSupport implements MokoResponseCallback {
         }
     }
 
-    public void publish(String topic, MqttMessage message) throws MqttException {
+    public void publish(String topic, byte[] message, int qos) throws MqttException {
         if (mqttAndroidClient != null) {
-            mqttAndroidClient.publish(topic, message, null, new ActionListener(mContext, ActionListener.Action.PUBLISH));
+            mqttAndroidClient.publish(topic, message, qos, false, null, new ActionListener(mContext, ActionListener.Action.PUBLISH));
         }
     }
 

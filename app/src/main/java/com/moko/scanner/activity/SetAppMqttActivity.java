@@ -135,8 +135,8 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
     };
 
     private void initData() {
-        etMqttHost.setText(mqttConfig.host);
-        etMqttPort.setText(mqttConfig.port);
+//        etMqttHost.setText(mqttConfig.host);
+//        etMqttPort.setText(mqttConfig.port);
         tvQos.setText(mQosArray[mqttConfig.qos]);
         ivCleanSession.setImageDrawable(ContextCompat.getDrawable(this, mqttConfig.cleanSession ? R.drawable.checkbox_open : R.drawable.checkbox_close));
         rgConnMode.setOnCheckedChangeListener(this);
@@ -152,11 +152,11 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
                 break;
         }
         tvKeepAlive.setText(mqttConfig.keepAlive + "");
-        etMqttClientId.setText(mqttConfig.clientId);
-        etMqttUsername.setText(mqttConfig.username);
-        etMqttPassword.setText(mqttConfig.password);
-        etTopicSubscribe.setText(mqttConfig.topicSubscribe);
-        etTopicPublish.setText(mqttConfig.topicPublish);
+//        etMqttClientId.setText(mqttConfig.clientId);
+//        etMqttUsername.setText(mqttConfig.username);
+//        etMqttPassword.setText(mqttConfig.password);
+//        etTopicSubscribe.setText(mqttConfig.topicSubscribe);
+//        etTopicPublish.setText(mqttConfig.topicPublish);
     }
 
     public void back(View view) {

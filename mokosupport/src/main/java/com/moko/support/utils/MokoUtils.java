@@ -135,9 +135,25 @@ public class MokoUtils {
     /**
      * @Date 2017/8/15
      * @Author wenzheng.liu
-     * @Description 将byte数组bRefArr转为一个整数, 字节数组的低位是整型的低字节位
+     * @Description 将byte数组bRefArr转为一个整数, 字节数组的低位是整型的高字节位
      */
     public static int toInt(byte[] bRefArr) {
+        int iOutcome = 0;
+        byte bLoop;
+
+        for (int i = 0, length = bRefArr.length; i < length; i++) {
+            bLoop = bRefArr[i];
+            iOutcome += (bLoop & 0xFF) << (8 * (length - 1 - i));
+        }
+        return iOutcome;
+    }
+
+    /**
+     * @Date 2017/8/15
+     * @Author wenzheng.liu
+     * @Description 将byte数组bRefArr转为一个整数, 字节数组的低位是整型的低字节位
+     */
+    public static int toIntReverse(byte[] bRefArr) {
         int iOutcome = 0;
         byte bLoop;
 
@@ -212,5 +228,21 @@ public class MokoUtils {
         }
 
         return result;
+    }
+
+    public static short byte2short(byte[] bytes) {
+        byte high = bytes[0];
+        byte low = bytes[1];
+        short z = (short) (((high & 0x00FF) << 8) | (0x00FF & low));
+        return z;
+    }
+
+    public static byte[] short2Byte(short x) {
+        byte high = (byte) (0x00FF & (x >> 8));//定义第一个byte
+        byte low = (byte) (0x00FF & x);//定义第二个byte
+        byte[] bytes = new byte[2];
+        bytes[0] = high;
+        bytes[1] = low;
+        return bytes;
     }
 }

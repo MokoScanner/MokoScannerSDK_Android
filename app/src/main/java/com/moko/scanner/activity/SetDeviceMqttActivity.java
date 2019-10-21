@@ -61,6 +61,8 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.io.FileInputStream;
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collections;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -186,7 +188,6 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
             filter.addAction(MokoConstants.ACTION_ORDER_TIMEOUT);
             filter.addAction(MokoConstants.ACTION_ORDER_FINISH);
             filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-            filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
             filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
             filter.setPriority(100);
             registerReceiver(mReceiver, filter);
@@ -372,41 +373,23 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                             mMokoService.disConnectBle();
                             // 弹出加载弹框
                             showConnMqttDialog();
+                            // 订阅主题
+                            subscribeTopic();
                             break;
-                    }
-                }
-                if (action.equals(MokoConstants.ACTION_MQTT_CONNECTION)) {
-                    int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_CONNECTION_STATE, 0);
-                    if (state == MokoConstants.MQTT_CONN_STATUS_SUCCESS && isSettingSuccess) {
-                        LogModule.i("连接MQTT成功");
-                        // 订阅设备主题
-//                    String topicSwitchState = mTopicPre + "switch_state";
-//                    String topicDelayTime = mTopicPre + "delay_time";
-//                    String topicDeleteDevice = mTopicPre + "delete_device";
-//                    String topicElectricityInfo = mTopicPre + "electricity_information";
-                        // 订阅
-                        try {
-                            if (TextUtils.isEmpty(mAppMqttConfig.topicSubscribe)) {
-                                MokoSupport.getInstance().subscribe(mqttConfig.topicPublish, mAppMqttConfig.qos);
-                            }
-//                        MokoSupport.getInstance().subscribe(topicDelayTime, mAppMqttConfig.qos);
-//                        MokoSupport.getInstance().subscribe(topicDeleteDevice, mAppMqttConfig.qos);
-//                        MokoSupport.getInstance().subscribe(topicElectricityInfo, mAppMqttConfig.qos);
-                        } catch (MqttException e) {
-                            e.printStackTrace();
-                        }
                     }
                 }
                 if (action.equals(MokoConstants.ACTION_MQTT_RECEIVE)) {
                     String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
-                    String receive = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE);
+                    byte[] receive = intent.getByteArrayExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE);
                     if (TextUtils.isEmpty(topic) || isDeviceConnectSuccess) {
                         return;
                     }
-                    Type type = new TypeToken<MsgCommon<JsonObject>>() {
-                    }.getType();
-                    MsgCommon<JsonObject> msgCommon = new Gson().fromJson(receive, type);
-                    if (!mqttConfig.uniqueId.equals(msgCommon.id)) {
+                    if ((receive[0] & 0xFF) != 0x24) {
+                        return;
+                    }
+                    int length = receive[1] & 0xFF;
+                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
+                    if (!mqttConfig.uniqueId.equals(new String(id))) {
                         return;
                     }
                     if (donutProgress == null)
@@ -420,7 +403,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                             @Override
                             public void run() {
                                 dismissConnMqttDialog();
-                                MokoDevice mokoDevice = DBTools.getInstance(SetDeviceMqttActivity.this).selectDevice(mqttConfig.uniqueId);
+                                MokoDevice mokoDevice = DBTools.getInstance(SetDeviceMqttActivity.this).selectDeviceByName(mSelectedDeviceName);
                                 if (mokoDevice == null) {
                                     mokoDevice = new MokoDevice();
                                     mokoDevice.name = mSelectedDeviceName;
@@ -430,7 +413,8 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                                     mokoDevice.uniqueId = mqttConfig.uniqueId;
                                     DBTools.getInstance(SetDeviceMqttActivity.this).insertDevice(mokoDevice);
                                 } else {
-                                    mokoDevice.name = mSelectedDeviceName;
+                                    mokoDevice.topicSubscribe = mqttConfig.topicSubscribe;
+                                    mokoDevice.topicPublish = mqttConfig.topicPublish;
                                     mokoDevice.uniqueId = mqttConfig.uniqueId;
                                     DBTools.getInstance(SetDeviceMqttActivity.this).updateDevice(mokoDevice);
                                 }
@@ -452,6 +436,17 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
             }
         }
     };
+
+    private void subscribeTopic() {
+        // 订阅
+        try {
+            if (TextUtils.isEmpty(mAppMqttConfig.topicSubscribe)) {
+                MokoSupport.getInstance().subscribe(mqttConfig.topicPublish, mAppMqttConfig.qos);
+            }
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConnectStatusEvent(ConnectStatusEvent event) {
@@ -526,10 +521,10 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                 break;
         }
         tvKeepAlive.setText(mqttConfig.keepAlive + "");
-        etMqttClientId.setText(mqttConfig.clientId);
-        etMqttDeviceId.setText(mqttConfig.uniqueId);
-        etMqttUsername.setText(mqttConfig.username);
-        etMqttPassword.setText(mqttConfig.password);
+//        etMqttClientId.setText(mqttConfig.clientId);
+//        etMqttDeviceId.setText(mqttConfig.uniqueId);
+//        etMqttUsername.setText(mqttConfig.username);
+//        etMqttPassword.setText(mqttConfig.password);
     }
 
     public void back(View view) {
@@ -783,6 +778,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                     isDeviceConnectSuccess = true;
                     dismissConnMqttDialog();
                     ToastUtils.showToast(SetDeviceMqttActivity.this, getString(R.string.mqtt_connecting_timeout));
+                    mMokoService.disConnectBle();
                 }
             }
         }, 90 * 1000);
@@ -800,5 +796,6 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         isDeviceConnectSuccess = true;
         dismissLoadingProgressDialog();
         ToastUtils.showToast(this, "Error");
+        mMokoService.disConnectBle();
     }
 }

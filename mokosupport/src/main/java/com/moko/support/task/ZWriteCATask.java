@@ -63,7 +63,7 @@ public class ZWriteCATask extends OrderTask {
     public void assembleData(byte[] value) {
         byte[] index = Arrays.copyOfRange(value, 1, 3);
         if (!isFailed && packetCount > MokoUtils.toInt(index)) {
-            packetCount++;
+            packetIndex++;
             byte[] indexBytes = MokoUtils.toByteArray(packetIndex, 2);
             int length = dataLength - dataOrigin;
             if (length > 16) {

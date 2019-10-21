@@ -3,6 +3,7 @@ package com.moko.scanner.service;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
 
@@ -318,8 +319,14 @@ public class MokoService extends Service {
         Object object = pemParser.readObject();
         PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder()
                 .build("".toCharArray());
-        JcaPEMKeyConverter converter = new JcaPEMKeyConverter()
-                .setProvider("BC");
+        JcaPEMKeyConverter converter;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            //适配Android P及以后版本，否则报错
+            converter = new JcaPEMKeyConverter();
+        } else {
+            converter = new JcaPEMKeyConverter().setProvider("BC");
+        }
+
         KeyPair key;
         if (object instanceof PEMEncryptedKeyPair) {
             LogModule.e("Encrypted key - we will use provided password");
