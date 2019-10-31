@@ -237,7 +237,8 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
         setIntent(intent);
         if (getIntent().getExtras() != null) {
             String from = getIntent().getStringExtra(AppConstants.EXTRA_KEY_FROM_ACTIVITY);
-            if (ModifyNameActivity.TAG.equals(from)) {
+            if (ModifyNameActivity.TAG.equals(from)
+                    || MoreActivity.TAG.equals(from)) {
                 devices.clear();
                 devices.addAll(DBTools.getInstance(this).selectAllDevice());
                 adapter.notifyDataSetChanged();

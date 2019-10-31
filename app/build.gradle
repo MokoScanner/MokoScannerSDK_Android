@@ -8,8 +8,8 @@ android {
         applicationId "com.moko.scanner"
         minSdkVersion 18
         targetSdkVersion 28
-        versionCode 4
-        versionName "1.1.0"
+        versionCode 1
+        versionName "1.0.0"
 
         javaCompileOptions {
             annotationProcessorOptions {
