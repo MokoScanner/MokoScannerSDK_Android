@@ -147,7 +147,6 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
             }
             if (MokoConstants.ACTION_MQTT_PUBLISH.equals(action)) {
                 int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
-                dismissLoadingProgressDialog();
             }
             if (MokoConstants.ACTION_MQTT_RECEIVE.equals(action)) {
                 final String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
@@ -203,6 +202,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                     if (device == null) {
                         return;
                     }
+                    dismissLoadingProgressDialog();
                     device.isOnline = true;
                     byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
                     int dataLength = MokoUtils.toInt(dataLengthBytes);

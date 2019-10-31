@@ -107,10 +107,12 @@ public class DBTools {
 
 
     public void updateDevice(MokoDevice mokoDevice) {
-        String where = DBConstants.DEVICE_FIELD_UNIQUE_ID + " = ?";
-        String[] whereValue = {mokoDevice.uniqueId};
+        String where = DBConstants.DEVICE_FIELD_NAME + " = ?";
+        String[] whereValue = {mokoDevice.name};
         ContentValues cv = new ContentValues();
         cv.put(DBConstants.DEVICE_FIELD_NICK_NAME, mokoDevice.nickName);
+        cv.put(DBConstants.DEVICE_FIELD_TOPIC_PUBLISH, mokoDevice.topicPublish);
+        cv.put(DBConstants.DEVICE_FIELD_TOPIC_SUBSCRIBE, mokoDevice.topicSubscribe);
         cv.put(DBConstants.DEVICE_FIELD_UNIQUE_ID, mokoDevice.uniqueId);
         db.update(DBConstants.TABLE_NAME_DEVICE, cv, where, whereValue);
     }

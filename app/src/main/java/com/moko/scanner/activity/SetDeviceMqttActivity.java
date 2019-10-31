@@ -147,8 +147,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         String mqttConfigStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
         mSelectedDeviceMac = getIntent().getStringExtra(MokoConstants.EXTRA_KEY_SELECTED_DEVICE_MAC);
         mSelectedDeviceName = getIntent().getStringExtra(MokoConstants.EXTRA_KEY_SELECTED_DEVICE_NAME);
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        mAppMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
+        mAppMqttConfig = new Gson().fromJson(mqttConfigStr, MQTTConfig.class);
         if (TextUtils.isEmpty(mqttConfigStr)) {
             mqttConfig = new MQTTConfig();
         } else {
@@ -413,6 +412,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                                     mokoDevice.uniqueId = mqttConfig.uniqueId;
                                     DBTools.getInstance(SetDeviceMqttActivity.this).insertDevice(mokoDevice);
                                 } else {
+                                    mokoDevice.name = mSelectedDeviceName;
                                     mokoDevice.topicSubscribe = mqttConfig.topicSubscribe;
                                     mokoDevice.topicPublish = mqttConfig.topicPublish;
                                     mokoDevice.uniqueId = mqttConfig.uniqueId;
@@ -664,6 +664,8 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         if ("{device_name}/{device_id}/device_to_app".equals(mqttConfig.topicPublish)) {
             mqttConfig.topicPublish = String.format("%s/%s/device_to_app", mSelectedDeviceName, deviceId);
         }
+        String mqttConfigStr = new Gson().toJson(mqttConfig, MQTTConfig.class);
+        SPUtiles.setStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_DEVICE, mqttConfigStr);
         showWifiInputDialog();
     }
 

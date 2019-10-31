@@ -15,5 +15,6 @@ public class MokoDevice implements Serializable {
     public String firmware_version;
     public String topicPublish;
     public String topicSubscribe;
+    public String mac;
     public boolean isOnline;
 }

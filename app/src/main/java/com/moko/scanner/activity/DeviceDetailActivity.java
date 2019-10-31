@@ -127,6 +127,8 @@ public class DeviceDetailActivity extends BaseActivity {
                 llScanInterval.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
                 rvDevices.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
                 etScanInterval.setEnabled(mScanSwitch);
+                mScanDevices.clear();
+                mAdapter.replaceData(mScanDevices);
                 setScanSwitch();
                 break;
             case R.id.tv_save:
@@ -183,8 +185,7 @@ public class DeviceDetailActivity extends BaseActivity {
                     byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
                     int deviceSize = receive[2 + length] & 0xff;
                     byte[] deviceBytes = Arrays.copyOfRange(receive, 3 + length, receive.length);
-                    if (mMokoDevice.uniqueId.equals(new String(id))) {
-                        mScanDevices = new ArrayList<>();
+                    if (mMokoDevice.uniqueId.equals(new String(id)) && mScanSwitch) {
                         for (int i = 0, l = deviceBytes.length; i < l; ) {
                             ScanDevice scanDevice = new ScanDevice();
                             int deviceLength = deviceBytes[i] & 0xff;
@@ -210,7 +211,7 @@ public class DeviceDetailActivity extends BaseActivity {
                             i += nameLength;
                             mScanDevices.add(scanDevice);
                         }
-                        tvScanDeviceTotal.setText(getString(R.string.scan_device_total, deviceSize));
+                        tvScanDeviceTotal.setText(getString(R.string.scan_device_total, mScanDevices.size()));
                         mAdapter.replaceData(mScanDevices);
                     }
                 }
@@ -333,9 +334,9 @@ public class DeviceDetailActivity extends BaseActivity {
     }
 
     public void more(View view) {
-//        Intent intent = new Intent(this, MoreActivity.class);
-//        intent.putExtra(AppConstants.EXTRA_KEY_DEVICE, mMokoDevice);
-//        startActivity(intent);
+        Intent intent = new Intent(this, MoreActivity.class);
+        intent.putExtra(AppConstants.EXTRA_KEY_DEVICE, mMokoDevice);
+        startActivity(intent);
     }
 
     public void back(View view) {

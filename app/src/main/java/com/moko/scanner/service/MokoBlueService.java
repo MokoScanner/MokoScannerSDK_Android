@@ -93,7 +93,7 @@ public class MokoBlueService extends Service implements MokoConnStateCallback, M
 
     @Override
     public void onCreate() {
-        LogModule.i("创建MokoService...onCreate");
+        LogModule.i("创建MokoBlueService...onCreate");
         mHandler = new ServiceHandler(this);
         super.onCreate();
     }
@@ -117,7 +117,7 @@ public class MokoBlueService extends Service implements MokoConnStateCallback, M
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        LogModule.i("启动MokoService...onStartCommand");
+        LogModule.i("启动MokoBlueService...onStartCommand");
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -125,26 +125,26 @@ public class MokoBlueService extends Service implements MokoConnStateCallback, M
 
     @Override
     public IBinder onBind(Intent intent) {
-        LogModule.i("绑定MokoService...onBind");
+        LogModule.i("绑定MokoBlueService...onBind");
         return mBinder;
     }
 
     @Override
     public void onLowMemory() {
-        LogModule.i("内存吃紧，销毁MokoService...onLowMemory");
+        LogModule.i("内存吃紧，销毁MokoBlueService...onLowMemory");
         disConnectBle();
         super.onLowMemory();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        LogModule.i("解绑MokoService...onUnbind");
+        LogModule.i("解绑MokoBlueService...onUnbind");
         return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
-        LogModule.i("销毁MokoService...onDestroy");
+        LogModule.i("销毁MokoBlueService...onDestroy");
         disConnectBle();
         super.onDestroy();
     }

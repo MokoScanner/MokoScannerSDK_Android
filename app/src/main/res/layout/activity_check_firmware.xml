@@ -69,6 +69,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
         android:paddingLeft="12dp"
         android:paddingRight="12dp">
 
@@ -90,7 +92,7 @@
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
             android:singleLine="true"
-            android:text=""
+            android:text="47.104.172.169"
             android:textColor="@color/black_333333"
             android:textSize="15sp" />
     </RelativeLayout>
@@ -98,6 +100,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
         android:paddingLeft="12dp"
         android:paddingRight="12dp">
 
@@ -121,7 +125,7 @@
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
             android:singleLine="true"
-            android:text=""
+            android:text="8080"
             android:textColor="@color/black_333333"
             android:textSize="15sp" />
     </RelativeLayout>
@@ -129,6 +133,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
         android:paddingLeft="12dp"
         android:paddingRight="12dp">
 
@@ -150,7 +156,7 @@
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
             android:singleLine="true"
-            android:text=""
+            android:text="/updata_fold/esp32_ble_gateway.bin"
             android:textColor="@color/black_333333"
             android:textSize="15sp" />
     </RelativeLayout>

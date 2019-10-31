@@ -1,5 +1,8 @@
 package com.moko.scanner.service;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
@@ -9,6 +12,8 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.moko.scanner.AppConstants;
+import com.moko.scanner.BuildConfig;
+import com.moko.scanner.R;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.support.MokoSupport;
@@ -57,6 +62,9 @@ import javax.net.ssl.X509TrustManager;
  * @ClassPath com.moko.scanner.service.MokoService
  */
 public class MokoService extends Service {
+
+    private boolean onCreate;
+    
     private IBinder mBinder = new LocalBinder();
 
     public class LocalBinder extends Binder {
@@ -80,6 +88,7 @@ public class MokoService extends Service {
         super.onCreate();
         LogModule.i("启动后台服务");
         String mqttAppConfigStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
+        onCreate = true;
         if (!TextUtils.isEmpty(mqttAppConfigStr)) {
             MQTTConfig mqttConfig = new Gson().fromJson(mqttAppConfigStr, MQTTConfig.class);
             if (!mqttConfig.isError(null)) {
@@ -176,6 +185,17 @@ public class MokoService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (onCreate && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            onCreate = false;
+            final String CHANNEL_ID = BuildConfig.APPLICATION_ID;
+            final String CHANNEL_NAME = getString(R.string.app_name);
+            NotificationChannel notificationChannel = new NotificationChannel(CHANNEL_ID,
+                    CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            manager.createNotificationChannel(notificationChannel);
+            Notification notification = new Notification.Builder(this, CHANNEL_ID).build();
+            startForeground(1, notification);
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 

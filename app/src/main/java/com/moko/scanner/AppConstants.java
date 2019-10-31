@@ -16,6 +16,7 @@ public class AppConstants {
     public static final String SP_NAME = "sp_name_scanner";
 //    public static final String SP_KEY_MQTT_CONFIG = "SP_KEY_MQTT_CONFIG";
     public static final String SP_KEY_MQTT_CONFIG_APP = "SP_KEY_MQTT_CONFIG_APP";
+    public static final String SP_KEY_MQTT_CONFIG_DEVICE = "SP_KEY_MQTT_CONFIG_DEVICE";
 
 
     public static final String SP_KEY_DEVICE_ADDRESS = "sp_key_device_address";

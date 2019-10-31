@@ -121,7 +121,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:onClick="modifyPowerStatus">
+        android:onClick="mqttSettingForDevice">
 
         <TextView
             android:layout_width="match_parent"
@@ -130,30 +130,7 @@
             android:layout_marginLeft="12dp"
             android:layout_marginRight="12dp"
             android:drawableRight="@drawable/arrow_right"
-            android:text="@string/more_modify_power_status"
-            android:textColor="@color/black_333333"
-            android:textSize="15sp" />
-
-
-        <View
-            style="@style/divider_line"
-            android:layout_alignParentBottom="true"
-            android:background="@color/grey_d9d9d9" />
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:onClick="about">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="12dp"
-            android:layout_marginRight="12dp"
-            android:drawableRight="@drawable/arrow_right"
-            android:text="@string/more_about"
+            android:text="@string/settings_mqtt_device"
             android:textColor="@color/black_333333"
             android:textSize="15sp" />
 
