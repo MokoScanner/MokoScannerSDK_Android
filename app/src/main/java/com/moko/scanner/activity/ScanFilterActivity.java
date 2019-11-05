@@ -63,11 +63,11 @@ public class ScanFilterActivity extends BaseActivity {
         mFilterRSSI = getIntent().getIntExtra(AppConstants.EXTRA_KEY_FILTER_RSSI, 0);
         mFilterName = getIntent().getStringExtra(AppConstants.EXTRA_KEY_FILTER_NAME);
         etFilterName.setText(mFilterName);
-        sbRssi.setProgress(Math.abs(-128 - mFilterRSSI));
+        sbRssi.setProgress(Math.abs(-100 - mFilterRSSI));
         sbRssi.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                mFilterRSSI = progress - 128;
+                mFilterRSSI = progress - 100;
                 tvRssi.setText(getString(R.string.scan_filter_rssi, mFilterRSSI));
             }
 

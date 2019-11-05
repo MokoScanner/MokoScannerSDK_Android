@@ -108,6 +108,7 @@ public class DeviceDetailActivity extends BaseActivity {
                     ToastUtils.showToast(DeviceDetailActivity.this, R.string.device_offline);
                     return;
                 }
+                showLoadingProgressDialog(getString(R.string.wait));
                 getFilterRSSI();
                 break;
             case R.id.iv_scan_switch:
@@ -121,9 +122,9 @@ public class DeviceDetailActivity extends BaseActivity {
                     return;
                 }
                 mScanSwitch = !mScanSwitch;
-                showLoadingProgressDialog(getString(R.string.wait));
                 ivScanSwitch.setImageResource(mScanSwitch ? R.drawable.checkbox_open : R.drawable.checkbox_close);
                 tvScanDeviceTotal.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
+                tvScanDeviceTotal.setText(getString(R.string.scan_device_total, 0));
                 llScanInterval.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
                 rvDevices.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
                 etScanInterval.setEnabled(mScanSwitch);
@@ -173,7 +174,6 @@ public class DeviceDetailActivity extends BaseActivity {
                         etScanInterval.setText("");
                     }
                 }
-                dismissLoadingProgressDialog();
             }
             if (MokoConstants.ACTION_MQTT_RECEIVE.equals(action)) {
                 final String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
@@ -209,7 +209,7 @@ public class DeviceDetailActivity extends BaseActivity {
                                 scanDevice.name = "";
                             }
                             i += nameLength;
-                            mScanDevices.add(scanDevice);
+                            mScanDevices.add(0, scanDevice);
                         }
                         tvScanDeviceTotal.setText(getString(R.string.scan_device_total, mScanDevices.size()));
                         mAdapter.replaceData(mScanDevices);
@@ -229,6 +229,7 @@ public class DeviceDetailActivity extends BaseActivity {
                     int length = receive[1] & 0xFF;
                     byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
                     if (mMokoDevice.uniqueId.equals(new String(id))) {
+                        dismissLoadingProgressDialog();
                         mFilterName = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
                         Intent i = new Intent(DeviceDetailActivity.this, ScanFilterActivity.class);
                         i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mMokoDevice);
