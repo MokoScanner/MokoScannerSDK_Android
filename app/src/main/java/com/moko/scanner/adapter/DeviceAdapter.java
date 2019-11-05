@@ -52,6 +52,13 @@ public class DeviceAdapter extends BaseAdapter<MokoDevice> {
                 listener.deviceDetailClick(device);
             }
         });
+        holder.rlDeviceDetail.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                listener.deviceLongClick(device);
+                return true;
+            }
+        });
     }
 
     @Override
@@ -82,5 +89,6 @@ public class DeviceAdapter extends BaseAdapter<MokoDevice> {
 
     public interface AdapterClickListener {
         void deviceDetailClick(MokoDevice device);
+        void deviceLongClick(MokoDevice device);
     }
 }

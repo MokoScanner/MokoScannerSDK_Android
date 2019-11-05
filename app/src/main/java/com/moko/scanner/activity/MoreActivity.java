@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Message;
 import android.text.InputFilter;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -30,14 +29,10 @@ import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
-import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
 import com.moko.support.log.LogModule;
-import com.moko.support.utils.MokoUtils;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
-
-import java.util.Arrays;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -57,7 +52,6 @@ public class MoreActivity extends BaseActivity {
     private MokoDevice mokoDevice;
     private int publishTopic;
     private MQTTConfig appMqttConfig;
-    private MoreHandler moreHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +71,6 @@ public class MoreActivity extends BaseActivity {
         filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
         filter.addAction(AppConstants.ACTION_DEVICE_STATE);
         registerReceiver(mReceiver, filter);
-        moreHandler = new MoreHandler(this);
         String mqttConfigAppStr = SPUtiles.getStringValue(MoreActivity.this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
         appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
     }
@@ -93,66 +86,6 @@ public class MoreActivity extends BaseActivity {
                 String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
                 byte[] receive = intent.getByteArrayExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE);
                 int header = receive[0] & 0xFF;
-                if (mIsDeviceInfoFinished)
-                    return;
-                if (header == 0x12)// 读取公司名称
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mokoDevice.uniqueId.equals(new String(id))) {
-                        mokoDevice.company_name = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
-                        getProductDate();
-                    }
-                }
-                if (header == 0x13)// 读取生产日期
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mokoDevice.uniqueId.equals(new String(id))) {
-                        mokoDevice.production_date = String.format("%d.%d.%d"
-                                , MokoUtils.toInt(Arrays.copyOfRange(receive, 4 + length, 6 + length))
-                                , receive[receive.length - 2] & 0xFF
-                                , receive[receive.length - 1] & 0xFF);
-                        getProductModel();
-                    }
-                }
-                if (header == 0x1A)// 读取设备型号
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mokoDevice.uniqueId.equals(new String(id))) {
-                        mokoDevice.product_model = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
-                        getFirmwareVersion();
-                    }
-                }
-                if (header == 0x15)// 读取固件版本
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mokoDevice.uniqueId.equals(new String(id))) {
-                        mokoDevice.firmware_version = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
-                        getMac();
-                    }
-                }
-                if (header == 0x16)// 读取MAC
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mokoDevice.uniqueId.equals(new String(id))) {
-                        mIsDeviceInfoFinished = true;
-                        mokoDevice.mac = String.format("%s:%s:%s:%s:%s:%s"
-                                , MokoUtils.byte2HexString(receive[receive.length - 6])
-                                , MokoUtils.byte2HexString(receive[receive.length - 5])
-                                , MokoUtils.byte2HexString(receive[receive.length - 4])
-                                , MokoUtils.byte2HexString(receive[receive.length - 3])
-                                , MokoUtils.byte2HexString(receive[receive.length - 2])
-                                , MokoUtils.byte2HexString(receive[receive.length - 1]));
-                        dismissLoadingProgressDialog();
-                        Intent i = new Intent(MoreActivity.this, DeviceInfoActivity.class);
-                        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mokoDevice);
-                        startActivity(i);
-                    }
-                }
             }
             if (MokoConstants.ACTION_MQTT_PUBLISH.equals(action)) {
                 int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
@@ -254,8 +187,6 @@ public class MoreActivity extends BaseActivity {
         }, 300);
     }
 
-    private boolean mIsDeviceInfoFinished;
-
     public void deviceInfo(View view) {
         if (!MokoSupport.getInstance().isConnected()) {
             ToastUtils.showToast(this, R.string.network_error);
@@ -265,119 +196,12 @@ public class MoreActivity extends BaseActivity {
             ToastUtils.showToast(this, R.string.device_offline);
             return;
         }
-        showLoadingProgressDialog(getString(R.string.wait));
-        LogModule.i("读取设备信息");
-//        try {
-//            MokoSupport.getInstance().subscribe(mokoDevice.getDeviceTopicFirmwareInfo(), appMqttConfig.qos);
-//        } catch (MqttException e) {
-//            e.printStackTrace();
-//        }
-        mIsDeviceInfoFinished = false;
-        moreHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (!mIsDeviceInfoFinished) {
-                    ToastUtils.showToast(MoreActivity.this, "Get data failed!");
-                    mIsDeviceInfoFinished = true;
-                    dismissLoadingProgressDialog();
-                }
-            }
-        }, 20000);
-//        MsgCommon<Object> msgCommon = new MsgCommon();
-//        msgCommon.msg_id = MokoConstants.MSG_ID_A_2_D_DEVICE_INFO;
-//        msgCommon.id = mokoDevice.uniqueId;
-//        MqttMessage message = new MqttMessage();
-//        message.setPayload(new Gson().toJson(msgCommon).getBytes());
-//        message.setQos(appMqttConfig.qos);
-//        publishTopic = 1;
-//        String appTopic;
-//        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-//            appTopic = mokoDevice.topicSubscribe;
-//        } else {
-//            appTopic = appMqttConfig.topicPublish;
-//        }
-//        try {
-//            MokoSupport.getInstance().publish(appTopic, message);
-//        } catch (MqttException e) {
-//            e.printStackTrace();
-//        }
-        getCompanyName();
+
+        Intent i = new Intent(MoreActivity.this, DeviceInfoActivity.class);
+        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mokoDevice);
+        startActivity(i);
     }
 
-    private void getCompanyName() {
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = mokoDevice.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadCompanyName(mokoDevice.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void getProductDate() {
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = mokoDevice.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadProductDate(mokoDevice.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void getProductModel() {
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = mokoDevice.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadProductModel(mokoDevice.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void getFirmwareVersion() {
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = mokoDevice.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadFirmwareVersion(mokoDevice.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void getMac() {
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = mokoDevice.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadMac(mokoDevice.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void checkNewFirmware(View view) {
         if (!MokoSupport.getInstance().isConnected()) {
@@ -490,18 +314,6 @@ public class MoreActivity extends BaseActivity {
             //调用系统输入法
             InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.showSoftInput(editText, 0);
-        }
-    }
-
-    public class MoreHandler extends BaseMessageHandler<MoreActivity> {
-
-        public MoreHandler(MoreActivity activity) {
-            super(activity);
-        }
-
-        @Override
-        protected void handleMessage(MoreActivity activity, Message msg) {
-
         }
     }
 }

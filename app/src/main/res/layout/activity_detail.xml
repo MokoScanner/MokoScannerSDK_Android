@@ -106,7 +106,6 @@
             android:layout_width="60dp"
             android:layout_height="40dp"
             android:background="@drawable/selector_edit_bg"
-            android:enabled="false"
             android:gravity="center"
             android:inputType="number"
             android:maxLength="5"

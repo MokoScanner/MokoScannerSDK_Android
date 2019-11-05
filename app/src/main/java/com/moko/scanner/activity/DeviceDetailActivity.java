@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Message;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -23,11 +24,11 @@ import com.moko.scanner.db.DBTools;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.entity.ScanDevice;
-import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
+import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
 import com.moko.support.utils.MokoUtils;
 
@@ -59,25 +60,17 @@ public class DeviceDetailActivity extends BaseActivity {
     private ScanDeviceAdapter mAdapter;
     private ArrayList<ScanDevice> mScanDevices;
     private int mPublishType;
-    private int mFilterRSSI;
-    private String mFilterName;
+    private MQTTConfig appMqttConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
         ButterKnife.bind(this);
-        mScanSwitch = getIntent().getBooleanExtra(AppConstants.EXTRA_KEY_SCAN_SWITCH, false);
-        mScanInterval = getIntent().getIntExtra(AppConstants.EXTRA_KEY_SCAN_INTERVAL, 0);
+        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
+        appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
         mMokoDevice = (MokoDevice) getIntent().getSerializableExtra(AppConstants.EXTRA_KEY_DEVICE);
         tvDeviceName.setText(mMokoDevice.nickName);
-        ivScanSwitch.setImageResource(mScanSwitch ? R.drawable.checkbox_open : R.drawable.checkbox_close);
-        tvScanDeviceTotal.setText(getString(R.string.scan_device_total, 0));
-        tvScanDeviceTotal.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
-        llScanInterval.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
-        rvDevices.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
-        etScanInterval.setText(mScanInterval + "");
-        etScanInterval.setEnabled(mScanSwitch);
         mScanDevices = new ArrayList<>();
         mAdapter = new ScanDeviceAdapter();
         mAdapter.openLoadAnimation();
@@ -92,7 +85,24 @@ public class DeviceDetailActivity extends BaseActivity {
         filter.addAction(AppConstants.ACTION_MODIFY_NAME);
         filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
         registerReceiver(mReceiver, filter);
-        startService(new Intent(this, MokoService.class));
+        showLoadingProgressDialog(getString(R.string.wait));
+        mHandler = new MessageHandler(this);
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                dismissLoadingProgressDialog();
+                DeviceDetailActivity.this.finish();
+            }
+        }, 30 * 1000);
+        getScanSwitch();
+        getScanInterval();
+    }
+
+    private void changeView() {
+        ivScanSwitch.setImageResource(mScanSwitch ? R.drawable.checkbox_open : R.drawable.checkbox_close);
+        tvScanDeviceTotal.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
+        llScanInterval.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
+        rvDevices.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
     }
 
     @OnClick({R.id.rl_edit_filter, R.id.tv_save, R.id.iv_scan_switch})
@@ -108,8 +118,11 @@ public class DeviceDetailActivity extends BaseActivity {
                     ToastUtils.showToast(DeviceDetailActivity.this, R.string.device_offline);
                     return;
                 }
-                showLoadingProgressDialog(getString(R.string.wait));
-                getFilterRSSI();
+//                showLoadingProgressDialog(getString(R.string.wait));
+//                getFilterRSSI();
+                Intent i = new Intent(DeviceDetailActivity.this, ScanFilterActivity.class);
+                i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mMokoDevice);
+                startActivity(i);
                 break;
             case R.id.iv_scan_switch:
                 // 切换扫描开关
@@ -215,28 +228,29 @@ public class DeviceDetailActivity extends BaseActivity {
                         mAdapter.replaceData(mScanDevices);
                     }
                 }
-                if (header == 0x19)// 蓝牙过滤RSSI
+                if (header == 0x17)// 开关状态
                 {
                     int length = receive[1] & 0xFF;
                     byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mMokoDevice.uniqueId.equals(new String(id))) {
-                        mFilterRSSI = receive[receive.length - 1];
-                        getFilterName();
+                    if (!mMokoDevice.uniqueId.equals(new String(id))) {
+                        return;
                     }
+                    mScanSwitch = (receive[receive.length - 1] & 0xFF) == 1;
+                    changeView();
                 }
-                if (header == 0x20)// 过滤扫描名称
+                if (header == 0x18)// 扫描时长
                 {
                     int length = receive[1] & 0xFF;
                     byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mMokoDevice.uniqueId.equals(new String(id))) {
-                        dismissLoadingProgressDialog();
-                        mFilterName = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
-                        Intent i = new Intent(DeviceDetailActivity.this, ScanFilterActivity.class);
-                        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mMokoDevice);
-                        i.putExtra(AppConstants.EXTRA_KEY_FILTER_RSSI, mFilterRSSI);
-                        i.putExtra(AppConstants.EXTRA_KEY_FILTER_NAME, mFilterName);
-                        startActivity(i);
+                    if (!mMokoDevice.uniqueId.equals(new String(id))) {
+                        return;
                     }
+                    dismissLoadingProgressDialog();
+                    byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
+                    int dataLength = MokoUtils.toInt(dataLengthBytes);
+                    mScanInterval = MokoUtils.toInt(Arrays.copyOfRange(receive, receive.length - dataLength, receive.length));
+                    etScanInterval.setText(mScanInterval + "");
+                    mHandler.removeMessages(0);
                 }
             }
             if (AppConstants.ACTION_MODIFY_NAME.equals(action)) {
@@ -256,8 +270,6 @@ public class DeviceDetailActivity extends BaseActivity {
     };
 
     private void setScanSwitch() {
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
             appTopic = mMokoDevice.topicSubscribe;
@@ -274,8 +286,6 @@ public class DeviceDetailActivity extends BaseActivity {
     }
 
     private void setScanInterval() {
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
             appTopic = mMokoDevice.topicSubscribe;
@@ -291,18 +301,14 @@ public class DeviceDetailActivity extends BaseActivity {
         }
     }
 
-
-    private void getFilterRSSI() {
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
+    private void getScanSwitch() {
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
             appTopic = mMokoDevice.topicSubscribe;
         } else {
             appTopic = appMqttConfig.topicPublish;
         }
-        mPublishType = 0;
-        byte[] message = MQTTMessageAssembler.assembleReadFilterRSSI(mMokoDevice.uniqueId);
+        byte[] message = MQTTMessageAssembler.assembleReadScanSwitch(mMokoDevice.uniqueId);
         try {
             MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
@@ -310,17 +316,14 @@ public class DeviceDetailActivity extends BaseActivity {
         }
     }
 
-    private void getFilterName() {
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
+    private void getScanInterval() {
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
             appTopic = mMokoDevice.topicSubscribe;
         } else {
             appTopic = appMqttConfig.topicPublish;
         }
-        mPublishType = 0;
-        byte[] message = MQTTMessageAssembler.assembleReadFilterName(mMokoDevice.uniqueId);
+        byte[] message = MQTTMessageAssembler.assembleReadScanInterval(mMokoDevice.uniqueId);
         try {
             MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
@@ -342,5 +345,18 @@ public class DeviceDetailActivity extends BaseActivity {
 
     public void back(View view) {
         finish();
+    }
+
+    public MessageHandler mHandler;
+
+    public class MessageHandler extends BaseMessageHandler<DeviceDetailActivity> {
+
+        public MessageHandler(DeviceDetailActivity activity) {
+            super(activity);
+        }
+
+        @Override
+        protected void handleMessage(DeviceDetailActivity activity, Message msg) {
+        }
     }
 }

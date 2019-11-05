@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Message;
 import android.text.InputFilter;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -20,12 +21,13 @@ import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.db.DBTools;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
-import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
+import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
+import com.moko.support.log.LogModule;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
@@ -51,18 +53,19 @@ public class ScanFilterActivity extends BaseActivity {
     private int mPublishType;
     private int mFilterRSSI;
     private String mFilterName;
+    private MQTTConfig appMqttConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_filter);
         ButterKnife.bind(this);
+        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
+        appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
 
         mMokoDevice = (MokoDevice) getIntent().getSerializableExtra(AppConstants.EXTRA_KEY_DEVICE);
         tvDeviceName.setText(mMokoDevice.nickName);
-        mFilterRSSI = getIntent().getIntExtra(AppConstants.EXTRA_KEY_FILTER_RSSI, 0);
-        mFilterName = getIntent().getStringExtra(AppConstants.EXTRA_KEY_FILTER_NAME);
-        etFilterName.setText(mFilterName);
+
         sbRssi.setProgress(Math.abs(-100 - mFilterRSSI));
         sbRssi.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -101,7 +104,17 @@ public class ScanFilterActivity extends BaseActivity {
         filter.addAction(AppConstants.ACTION_MODIFY_NAME);
         filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
         registerReceiver(mReceiver, filter);
-        startService(new Intent(this, MokoService.class));
+        showLoadingProgressDialog(getString(R.string.wait));
+        mHandler = new MessageHandler(this);
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                dismissLoadingProgressDialog();
+                ScanFilterActivity.this.finish();
+            }
+        }, 30 * 1000);
+        getFilterRSSI();
+        getFilterName();
     }
 
 
@@ -121,13 +134,37 @@ public class ScanFilterActivity extends BaseActivity {
                 }
                 if (mPublishType == 1) {
                     if (state == MokoConstants.MQTT_STATE_SUCCESS) {
+                        dismissLoadingProgressDialog();
                         ToastUtils.showToast(ScanFilterActivity.this, "Succeed");
+                        mHandler.removeMessages(1);
                     }
                 }
-                dismissLoadingProgressDialog();
             }
             if (MokoConstants.ACTION_MQTT_RECEIVE.equals(action)) {
                 final String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
+                byte[] receive = intent.getByteArrayExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE);
+                int header = receive[0] & 0xFF;
+                if (header == 0x19)// 蓝牙过滤RSSI
+                {
+                    int length = receive[1] & 0xFF;
+                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
+                    if (mMokoDevice.uniqueId.equals(new String(id))) {
+                        mFilterRSSI = receive[receive.length - 1];
+                        sbRssi.setProgress(Math.abs(-100 - mFilterRSSI));
+                        tvRssi.setText(getString(R.string.scan_filter_rssi, mFilterRSSI));
+                    }
+                }
+                if (header == 0x20)// 过滤扫描名称
+                {
+                    int length = receive[1] & 0xFF;
+                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
+                    if (mMokoDevice.uniqueId.equals(new String(id))) {
+                        dismissLoadingProgressDialog();
+                        mFilterName = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
+                        etFilterName.setText(mFilterName);
+                        mHandler.removeMessages(0);
+                    }
+                }
             }
             if (AppConstants.ACTION_MODIFY_NAME.equals(action)) {
                 MokoDevice device = DBTools.getInstance(ScanFilterActivity.this).selectDevice(mMokoDevice.uniqueId);
@@ -163,6 +200,14 @@ public class ScanFilterActivity extends BaseActivity {
             case R.id.tv_confirm:
                 // 发送设置的过滤RSSI和名字
                 mFilterName = etFilterName.getText().toString();
+                Message message = Message.obtain(mHandler, new Runnable() {
+                    @Override
+                    public void run() {
+                       dismissLoadingProgressDialog();
+                    }
+                });
+                message.what = 1;
+                mHandler.sendMessageDelayed(message, 30 * 1000);
                 showLoadingProgressDialog(getString(R.string.wait));
                 setFilterRSSI();
                 break;
@@ -170,8 +215,6 @@ public class ScanFilterActivity extends BaseActivity {
     }
 
     private void setFilterRSSI() {
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
             appTopic = mMokoDevice.topicSubscribe;
@@ -189,8 +232,6 @@ public class ScanFilterActivity extends BaseActivity {
 
 
     private void setFilterName() {
-        String mqttConfigAppStr = SPUtiles.getStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
             appTopic = mMokoDevice.topicSubscribe;
@@ -203,6 +244,51 @@ public class ScanFilterActivity extends BaseActivity {
             MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void getFilterRSSI() {
+        String appTopic;
+        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+            appTopic = mMokoDevice.topicSubscribe;
+        } else {
+            appTopic = appMqttConfig.topicPublish;
+        }
+        mPublishType = -1;
+        byte[] message = MQTTMessageAssembler.assembleReadFilterRSSI(mMokoDevice.uniqueId);
+        try {
+            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getFilterName() {
+        String appTopic;
+        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+            appTopic = mMokoDevice.topicSubscribe;
+        } else {
+            appTopic = appMqttConfig.topicPublish;
+        }
+        mPublishType = -1;
+        byte[] message = MQTTMessageAssembler.assembleReadFilterName(mMokoDevice.uniqueId);
+        try {
+            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public MessageHandler mHandler;
+
+    public class MessageHandler extends BaseMessageHandler<ScanFilterActivity> {
+
+        public MessageHandler(ScanFilterActivity activity) {
+            super(activity);
+        }
+
+        @Override
+        protected void handleMessage(ScanFilterActivity activity, Message msg) {
         }
     }
 }

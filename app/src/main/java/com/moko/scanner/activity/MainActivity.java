@@ -21,6 +21,7 @@ import com.moko.scanner.R;
 import com.moko.scanner.adapter.DeviceAdapter;
 import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.db.DBTools;
+import com.moko.scanner.dialog.RemoveDialog;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.entity.MsgCommon;
@@ -61,8 +62,6 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
     TextView tvTitle;
     private ArrayList<MokoDevice> devices;
     private DeviceAdapter adapter;
-    private boolean mScanSwitch;
-    private int mScanInterval;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +86,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
         filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
         filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
         filter.addAction(MokoConstants.ACTION_MQTT_SUBSCRIBE);
+        filter.addAction(MokoConstants.ACTION_MQTT_UNSUBSCRIBE);
         filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
         filter.addAction(AppConstants.ACTION_MODIFY_NAME);
         filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
@@ -145,6 +145,10 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
             if (MokoConstants.ACTION_MQTT_SUBSCRIBE.equals(action)) {
                 int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
             }
+            if (MokoConstants.ACTION_MQTT_UNSUBSCRIBE.equals(action)) {
+                int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
+                dismissLoadingProgressDialog();
+            }
             if (MokoConstants.ACTION_MQTT_PUBLISH.equals(action)) {
                 int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
             }
@@ -183,37 +187,6 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                         }
                     }
                 }
-                if (header == 0x17)// 开关状态
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    MokoDevice device = DBTools.getInstance(MainActivity.this).selectDevice(new String(id));
-                    if (device == null) {
-                        return;
-                    }
-                    mScanSwitch = (receive[receive.length - 1] & 0xFF) == 1;
-                    getScanInterval(device);
-                }
-                if (header == 0x18)// 扫描时长
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    MokoDevice device = DBTools.getInstance(MainActivity.this).selectDevice(new String(id));
-                    if (device == null) {
-                        return;
-                    }
-                    dismissLoadingProgressDialog();
-                    device.isOnline = true;
-                    byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
-                    int dataLength = MokoUtils.toInt(dataLengthBytes);
-                    mScanInterval = MokoUtils.toInt(Arrays.copyOfRange(receive, receive.length - dataLength, receive.length));
-                    Intent i = new Intent(MainActivity.this, DeviceDetailActivity.class);
-                    i.putExtra(AppConstants.EXTRA_KEY_DEVICE, device);
-                    i.putExtra(AppConstants.EXTRA_KEY_SCAN_SWITCH, mScanSwitch);
-                    i.putExtra(AppConstants.EXTRA_KEY_SCAN_INTERVAL, mScanInterval);
-                    startActivity(i);
-                }
-
             }
             if (AppConstants.ACTION_MODIFY_NAME.equals(action)) {
                 devices.clear();
@@ -302,42 +275,39 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
             ToastUtils.showToast(this, R.string.device_offline);
             return;
         }
-        showLoadingProgressDialog(getString(R.string.wait));
-        getScanSwitch(device);
+        Intent i = new Intent(MainActivity.this, DeviceDetailActivity.class);
+        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, device);
+        startActivity(i);
     }
 
-    private void getScanSwitch(MokoDevice device) {
-        String mqttConfigAppStr = SPUtiles.getStringValue(MainActivity.this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = device.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadScanSwitch(device.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void getScanInterval(MokoDevice device) {
-        String mqttConfigAppStr = SPUtiles.getStringValue(MainActivity.this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
-        MQTTConfig appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = device.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadScanInterval(device.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void deviceLongClick(final MokoDevice device) {
+        RemoveDialog dialog = new RemoveDialog(this);
+        dialog.setListener(new RemoveDialog.RemoveListener() {
+            @Override
+            public void onConfirmClick(RemoveDialog dialog) {
+                if (!MokoSupport.getInstance().isConnected()) {
+                    ToastUtils.showToast(MainActivity.this, R.string.network_error);
+                    return;
+                }
+                showLoadingProgressDialog(getString(R.string.wait));
+                // 取消订阅
+                try {
+                    MokoSupport.getInstance().unSubscribe(device.topicPublish);
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+                LogModule.i("删除设备");
+                DBTools.getInstance(MainActivity.this).deleteDevice(device);
+                Intent i = new Intent(AppConstants.ACTION_DELETE_DEVICE);
+                i.putExtra(AppConstants.EXTRA_DELETE_DEVICE_ID, device.id);
+                MainActivity.this.sendBroadcast(i);
+                devices.remove(device);
+                adapter.notifyDataSetChanged();
+                dialog.dismiss();
+            }
+        });
+        dialog.show();
     }
 
     public void about(View view) {
