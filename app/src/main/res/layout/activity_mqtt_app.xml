@@ -87,7 +87,7 @@
                     android:paddingLeft="5dp"
                     android:paddingRight="5dp"
                     android:singleLine="true"
-                    android:text="a1fhygr0xxahcm-ats.iot.us-west-2.amazonaws.com"
+                    android:text=""
                     android:textColor="@color/black_333333"
                     android:textSize="18sp" />
             </RelativeLayout>
@@ -125,7 +125,7 @@
                         android:paddingLeft="5dp"
                         android:paddingRight="5dp"
                         android:singleLine="true"
-                        android:text="8883"
+                        android:text=""
                         android:textColor="@color/black_333333"
                         android:textSize="18sp" />
                 </RelativeLayout>

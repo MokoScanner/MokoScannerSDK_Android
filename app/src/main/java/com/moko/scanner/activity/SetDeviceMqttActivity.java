@@ -521,10 +521,10 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                 break;
         }
         tvKeepAlive.setText(mqttConfig.keepAlive + "");
-//        etMqttClientId.setText(mqttConfig.clientId);
-//        etMqttDeviceId.setText(mqttConfig.uniqueId);
-//        etMqttUsername.setText(mqttConfig.username);
-//        etMqttPassword.setText(mqttConfig.password);
+        etMqttClientId.setText(mqttConfig.clientId);
+        etMqttDeviceId.setText(mqttConfig.uniqueId);
+        etMqttUsername.setText(mqttConfig.username);
+        etMqttPassword.setText(mqttConfig.password);
     }
 
     public void back(View view) {

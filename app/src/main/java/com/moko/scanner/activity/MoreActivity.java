@@ -128,6 +128,7 @@ public class MoreActivity extends BaseActivity {
                 String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
                 if (topic.equals(mokoDevice.topicPublish)) {
                     mokoDevice.isOnline = false;
+                    finish();
                 }
             }
         }
@@ -298,7 +299,9 @@ public class MoreActivity extends BaseActivity {
     }
 
     public void mqttSettingForDevice(View view) {
-        startActivity(new Intent(this, SettingForDeviceActivity.class));
+        Intent i = new Intent(MoreActivity.this, SettingForDeviceActivity.class);
+        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mokoDevice);
+        startActivity(i);
     }
 
 

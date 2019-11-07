@@ -102,7 +102,7 @@ public class ScanFilterActivity extends BaseActivity {
         filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
         filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
         filter.addAction(AppConstants.ACTION_MODIFY_NAME);
-        filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
+        filter.addAction(AppConstants.ACTION_DEVICE_STATE);
         registerReceiver(mReceiver, filter);
         showLoadingProgressDialog(getString(R.string.wait));
         mHandler = new MessageHandler(this);
@@ -170,12 +170,11 @@ public class ScanFilterActivity extends BaseActivity {
                 MokoDevice device = DBTools.getInstance(ScanFilterActivity.this).selectDevice(mMokoDevice.uniqueId);
                 mMokoDevice.nickName = device.nickName;
             }
-            if (AppConstants.ACTION_DELETE_DEVICE.equals(action)) {
-                if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
-                    String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
-                    if (topic.equals(mMokoDevice.topicPublish)) {
-                        mMokoDevice.isOnline = false;
-                    }
+            if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
+                String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
+                if (topic.equals(mMokoDevice.topicPublish)) {
+                    mMokoDevice.isOnline = false;
+                    finish();
                 }
             }
         }
@@ -198,6 +197,14 @@ public class ScanFilterActivity extends BaseActivity {
                 finish();
                 break;
             case R.id.tv_confirm:
+                if (!MokoSupport.getInstance().isConnected()) {
+                    ToastUtils.showToast(this, R.string.network_error);
+                    return;
+                }
+                if (!mMokoDevice.isOnline) {
+                    ToastUtils.showToast(this, R.string.device_offline);
+                    return;
+                }
                 // 发送设置的过滤RSSI和名字
                 mFilterName = etFilterName.getText().toString();
                 Message message = Message.obtain(mHandler, new Runnable() {

@@ -482,7 +482,7 @@
                 android:background="@drawable/shape_corner_btn_bg"
                 android:gravity="center"
                 android:onClick="saveSettings"
-                android:text="@string/save"
+                android:text="Next"
                 android:textColor="@color/white_ffffff"
                 android:textSize="18sp" />
         </LinearLayout>

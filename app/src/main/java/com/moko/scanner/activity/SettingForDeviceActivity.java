@@ -1,5 +1,9 @@
 package com.moko.scanner.activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -9,7 +13,9 @@ import com.moko.scanner.AppConstants;
 import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.entity.MQTTConfig;
+import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.utils.SPUtiles;
+import com.moko.support.MokoConstants;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -47,6 +53,7 @@ public class SettingForDeviceActivity extends BaseActivity {
     TextView tvSubscribeTopic;
     @Bind(R.id.tv_publish_topic)
     TextView tvPublishTopic;
+    private MokoDevice mokoDevice;
 
 
     @Override
@@ -54,7 +61,7 @@ public class SettingForDeviceActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting_for_device);
         ButterKnife.bind(this);
-
+        mokoDevice = (MokoDevice) getIntent().getSerializableExtra(AppConstants.EXTRA_KEY_DEVICE);
         String mqttConfigDeviceStr = SPUtiles.getStringValue(SettingForDeviceActivity.this, AppConstants.SP_KEY_MQTT_CONFIG_DEVICE, "");
         MQTTConfig mqttConfig = new Gson().fromJson(mqttConfigDeviceStr, MQTTConfig.class);
 
@@ -79,10 +86,33 @@ public class SettingForDeviceActivity extends BaseActivity {
         }
         tvSubscribeTopic.setText(mqttConfig.topicSubscribe);
         tvPublishTopic.setText(mqttConfig.topicPublish);
+        // 注册广播接收器
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(AppConstants.ACTION_DEVICE_STATE);
+        registerReceiver(mReceiver, filter);
     }
 
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
+                String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
+                if (topic.equals(mokoDevice.topicPublish)) {
+                    mokoDevice.isOnline = false;
+                    finish();
+                }
+            }
+        }
+    };
 
     public void back(View view) {
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mReceiver);
     }
 }

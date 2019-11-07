@@ -68,6 +68,7 @@ public class MQTTConfig implements Serializable {
         qos = 1;
         keepAlive = 60;
         clientId = "";
+        uniqueId = "";
         username = "";
         password = "";
         caPath = "";

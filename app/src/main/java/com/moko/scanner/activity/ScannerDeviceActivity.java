@@ -1,8 +1,11 @@
 package com.moko.scanner.activity;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -72,6 +75,10 @@ public class ScannerDeviceActivity extends BaseActivity implements MokoScanDevic
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mMokoService = ((MokoBlueService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+            registerReceiver(mReceiver, filter);
             if (animation == null) {
                 startScan();
             }
@@ -82,9 +89,34 @@ public class ScannerDeviceActivity extends BaseActivity implements MokoScanDevic
         }
     };
 
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null) {
+                String action = intent.getAction();
+                if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                    int blueState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 0);
+                    switch (blueState) {
+                        case BluetoothAdapter.STATE_TURNING_OFF:
+                            if (animation != null) {
+                                mMokoService.mHandler.removeMessages(0);
+                                findViewById(R.id.iv_refresh).clearAnimation();
+                                animation = null;
+                                updateDevices();
+                            }
+                            break;
+
+                    }
+                }
+            }
+        }
+    };
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        unregisterReceiver(mReceiver);
         unbindService(mServiceConnection);
         EventBus.getDefault().unregister(this);
         stopService(new Intent(this, MokoBlueService.class));

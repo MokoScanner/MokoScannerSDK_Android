@@ -83,7 +83,7 @@ public class DeviceDetailActivity extends BaseActivity {
         filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
         filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
         filter.addAction(AppConstants.ACTION_MODIFY_NAME);
-        filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
+        filter.addAction(AppConstants.ACTION_DEVICE_STATE);
         registerReceiver(mReceiver, filter);
         showLoadingProgressDialog(getString(R.string.wait));
         mHandler = new MessageHandler(this);
@@ -141,6 +141,7 @@ public class DeviceDetailActivity extends BaseActivity {
                 llScanInterval.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
                 rvDevices.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
                 etScanInterval.setEnabled(mScanSwitch);
+                etScanInterval.setText(mScanInterval + "");
                 mScanDevices.clear();
                 mAdapter.replaceData(mScanDevices);
                 setScanSwitch();
@@ -157,12 +158,12 @@ public class DeviceDetailActivity extends BaseActivity {
                 }
                 String interval = etScanInterval.getText().toString();
                 if (TextUtils.isEmpty(interval)) {
-                    ToastUtils.showToast(this, "Scan Time is empty!");
+                    ToastUtils.showToast(this, "Failed");
                     return;
                 }
                 mScanInterval = Integer.parseInt(interval);
                 if (mScanInterval < 1 || mScanInterval > 65535) {
-                    ToastUtils.showToast(this, "Scan Time range is 1~65535!");
+                    ToastUtils.showToast(this, "Failed");
                     return;
                 }
                 setScanInterval();
@@ -258,12 +259,12 @@ public class DeviceDetailActivity extends BaseActivity {
                 mMokoDevice.nickName = device.nickName;
                 tvDeviceName.setText(mMokoDevice.nickName);
             }
-            if (AppConstants.ACTION_DELETE_DEVICE.equals(action)) {
-                if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
-                    String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
-                    if (topic.equals(mMokoDevice.topicPublish)) {
-                        mMokoDevice.isOnline = false;
-                    }
+            if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
+                String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
+                if (topic.equals(mMokoDevice.topicPublish)) {
+                    mMokoDevice.isOnline = false;
+                    ToastUtils.showToast(DeviceDetailActivity.this, "device is off-line");
+                    finish();
                 }
             }
         }

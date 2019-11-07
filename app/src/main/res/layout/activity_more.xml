@@ -107,7 +107,7 @@
             android:layout_marginLeft="12dp"
             android:layout_marginRight="12dp"
             android:drawableRight="@drawable/arrow_right"
-            android:text="@string/more_new_firmware"
+            android:text="OTA"
             android:textColor="@color/black_333333"
             android:textSize="15sp" />
 
