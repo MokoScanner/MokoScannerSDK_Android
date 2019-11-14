@@ -39,6 +39,7 @@ import java.io.Writer;
 import java.security.KeyManagementException;
 import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -252,8 +253,10 @@ public class MokoService extends Service {
         trustAllCerts[0] = tm;
         SSLContext sc = null;
         try {
-            // 全信任
+            sc = SSLContext.getInstance("SSL");
             sc.init(null, trustAllCerts, null);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         } catch (KeyManagementException e) {
             e.printStackTrace();
         }

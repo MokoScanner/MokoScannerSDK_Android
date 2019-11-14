@@ -162,7 +162,7 @@ public class DeviceDetailActivity extends BaseActivity {
                     return;
                 }
                 mScanInterval = Integer.parseInt(interval);
-                if (mScanInterval < 1 || mScanInterval > 65535) {
+                if (mScanInterval < 10 || mScanInterval > 65535) {
                     ToastUtils.showToast(this, "Failed");
                     return;
                 }

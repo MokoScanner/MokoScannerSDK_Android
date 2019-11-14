@@ -525,6 +525,8 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         etMqttDeviceId.setText(mqttConfig.uniqueId);
         etMqttUsername.setText(mqttConfig.username);
         etMqttPassword.setText(mqttConfig.password);
+        etTopicSubscribe.setText("{device_name}/{device_id}/app_to_device");
+        etTopicPublish.setText("{device_name}/{device_id}/device_to_app");
     }
 
     public void back(View view) {

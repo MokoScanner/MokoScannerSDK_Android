@@ -11,7 +11,7 @@
     <string name="mqtt_connected">Connected</string>
     <string name="mqtt_connect_failed">Connect Failed</string>
     <string name="network_error">Network error,please check.</string>
-    <string name="device_offline">Device offline,please check.</string>
+    <string name="device_offline">device is off-line</string>
     <string name="guide_center">Moko Scanner</string>
     <string name="guide_company_info">MOKO TECHNOLOGY LTD.</string>
     <string name="main_welcome">Please add new device!</string>
