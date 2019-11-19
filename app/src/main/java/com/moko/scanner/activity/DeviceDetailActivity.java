@@ -30,10 +30,14 @@ import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
 import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
+import com.moko.support.log.LogModule;
 import com.moko.support.utils.MokoUtils;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -101,6 +105,7 @@ public class DeviceDetailActivity extends BaseActivity {
     private void changeView() {
         ivScanSwitch.setImageResource(mScanSwitch ? R.drawable.checkbox_open : R.drawable.checkbox_close);
         tvScanDeviceTotal.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
+        tvScanDeviceTotal.setText(getString(R.string.scan_device_total, mScanDevices.size()));
         llScanInterval.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
         rvDevices.setVisibility(mScanSwitch ? View.VISIBLE : View.GONE);
     }
@@ -200,33 +205,44 @@ public class DeviceDetailActivity extends BaseActivity {
                     int deviceSize = receive[2 + length] & 0xff;
                     byte[] deviceBytes = Arrays.copyOfRange(receive, 3 + length, receive.length);
                     if (mMokoDevice.uniqueId.equals(new String(id)) && mScanSwitch) {
-                        for (int i = 0, l = deviceBytes.length; i < l; ) {
-                            ScanDevice scanDevice = new ScanDevice();
-                            int deviceLength = deviceBytes[i] & 0xff;
-                            i++;
-                            String mac = MokoUtils.bytesToHexString(Arrays.copyOfRange(deviceBytes, i, i + 6));
-                            scanDevice.mac = mac;
-                            i += 6;
-                            int rssi = deviceBytes[i];
-                            scanDevice.rssi = rssi;
-                            i++;
-                            int dataLength = deviceBytes[i] & 0xff;
-                            i++;
-                            String rawData = MokoUtils.bytesToHexString(Arrays.copyOfRange(deviceBytes, i, i + dataLength));
-                            scanDevice.rawData = rawData;
-                            i += dataLength;
-                            int nameLength = deviceLength - 8 - dataLength;
-                            if (nameLength > 0) {
-                                String name = new String(Arrays.copyOfRange(deviceBytes, i, i + nameLength));
-                                scanDevice.name = name;
-                            } else {
-                                scanDevice.name = "";
+                        try {
+                            for (int i = 0, l = deviceBytes.length; i < l; ) {
+                                ScanDevice scanDevice = new ScanDevice();
+                                int deviceLength = deviceBytes[i] & 0xff;
+                                i++;
+                                String mac = MokoUtils.bytesToHexString(Arrays.copyOfRange(deviceBytes, i, i + 6));
+                                scanDevice.mac = mac;
+                                i += 6;
+                                int rssi = deviceBytes[i];
+                                scanDevice.rssi = rssi;
+                                i++;
+                                int dataLength = deviceBytes[i] & 0xff;
+                                i++;
+                                String rawData = MokoUtils.bytesToHexString(Arrays.copyOfRange(deviceBytes, i, i + dataLength));
+                                scanDevice.rawData = rawData;
+                                i += dataLength;
+                                int nameLength = deviceLength - 8 - dataLength;
+                                if (nameLength > 0) {
+                                    String name = new String(Arrays.copyOfRange(deviceBytes, i, i + nameLength));
+                                    scanDevice.name = name;
+                                } else {
+                                    scanDevice.name = "";
+                                }
+                                i += nameLength;
+                                mScanDevices.add(0, scanDevice);
                             }
-                            i += nameLength;
-                            mScanDevices.add(0, scanDevice);
+                            tvScanDeviceTotal.setText(getString(R.string.scan_device_total, mScanDevices.size()));
+                            mAdapter.replaceData(mScanDevices);
+                        } catch (Exception e) {
+                            // 读取stacktrace信息
+                            final Writer result = new StringWriter();
+                            final PrintWriter printWriter = new PrintWriter(result);
+                            e.printStackTrace(printWriter);
+                            StringBuffer errorReport = new StringBuffer();
+                            errorReport.append(MokoUtils.bytesToHexString(receive));
+                            errorReport.append(result.toString());
+                            LogModule.e(errorReport.toString());
                         }
-                        tvScanDeviceTotal.setText(getString(R.string.scan_device_total, mScanDevices.size()));
-                        mAdapter.replaceData(mScanDevices);
                     }
                 }
                 if (header == 0x17)// 开关状态

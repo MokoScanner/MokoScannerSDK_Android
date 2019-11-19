@@ -111,8 +111,8 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
             if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
                 String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
                 if (topic.equals(mokoDevice.topicPublish)) {
-                    mokoDevice.isOnline = false;
-                    finish();
+                    boolean isOnline = intent.getBooleanExtra(MokoConstants.EXTRA_MQTT_RECEIVE_STATE, false);
+                    mokoDevice.isOnline = isOnline;
                 }
             }
         }

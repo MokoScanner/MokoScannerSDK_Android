@@ -249,6 +249,11 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
                 return;
             }
         }
+        if (!mqttConfig.topicPublish.isEmpty() && !mqttConfig.topicSubscribe.isEmpty()
+                && mqttConfig.topicPublish.equals(mqttConfig.topicSubscribe)) {
+            ToastUtils.showToast(this, "Subscribed and published topic can't be same !");
+            return;
+        }
 
         String mqttConfigStr = new Gson().toJson(mqttConfig, MQTTConfig.class);
         SPUtiles.setStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, mqttConfigStr);

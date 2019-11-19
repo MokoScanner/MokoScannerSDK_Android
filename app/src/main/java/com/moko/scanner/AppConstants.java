@@ -16,7 +16,6 @@ public class AppConstants {
     public static final String SP_NAME = "sp_name_scanner";
 //    public static final String SP_KEY_MQTT_CONFIG = "SP_KEY_MQTT_CONFIG";
     public static final String SP_KEY_MQTT_CONFIG_APP = "SP_KEY_MQTT_CONFIG_APP";
-    public static final String SP_KEY_MQTT_CONFIG_DEVICE = "SP_KEY_MQTT_CONFIG_DEVICE";
 
 
     public static final String SP_KEY_DEVICE_ADDRESS = "sp_key_device_address";
@@ -29,6 +28,7 @@ public class AppConstants {
     public static final String EXTRA_KEY_TEMP_HOUR = "EXTRA_KEY_TEMP_HOUR";
     public static final String EXTRA_KEY_TEMP_MINUTE = "EXTRA_KEY_TEMP_MINUTE";
     public static final String EXTRA_KEY_FROM_ACTIVITY = "EXTRA_KEY_FROM_ACTIVITY";
+    public static final String EXTRA_KEY_UNIQUE_ID = "EXTRA_KEY_UNIQUE_ID";
     public static final String EXTRA_KEY_DEVICE= "EXTRA_KEY_DEVICE";
     public static final String EXTRA_DELETE_DEVICE_ID = "EXTRA_DELETE_DEVICE_ID";
     public static final String EXTRA_KEY_SCAN_SWITCH = "EXTRA_KEY_SCAN_SWITCH";

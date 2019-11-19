@@ -75,6 +75,7 @@ public class MokoConstants {
     public static final String EXTRA_AP_SET_DATA_RESPONSE = "EXTRA_AP_SET_DATA_RESPONSE";
     public static final String EXTRA_MQTT_CONNECTION_STATE = "EXTRA_MQTT_CONNECTION_STATE";
     public static final String EXTRA_MQTT_RECEIVE_TOPIC = "EXTRA_MQTT_RECEIVE_TOPIC";
+    public static final String EXTRA_MQTT_RECEIVE_STATE = "EXTRA_MQTT_RECEIVE_STATE";
     public static final String EXTRA_MQTT_RECEIVE_MESSAGE = "EXTRA_MQTT_RECEIVE_MESSAGE";
     public static final String EXTRA_MQTT_STATE = "EXTRA_MQTT_STATE";
 

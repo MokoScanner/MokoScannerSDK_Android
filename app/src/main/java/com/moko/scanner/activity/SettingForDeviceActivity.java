@@ -62,7 +62,7 @@ public class SettingForDeviceActivity extends BaseActivity {
         setContentView(R.layout.activity_setting_for_device);
         ButterKnife.bind(this);
         mokoDevice = (MokoDevice) getIntent().getSerializableExtra(AppConstants.EXTRA_KEY_DEVICE);
-        String mqttConfigDeviceStr = SPUtiles.getStringValue(SettingForDeviceActivity.this, AppConstants.SP_KEY_MQTT_CONFIG_DEVICE, "");
+        String mqttConfigDeviceStr = mokoDevice.mqttInfo;
         MQTTConfig mqttConfig = new Gson().fromJson(mqttConfigDeviceStr, MQTTConfig.class);
 
         tvHost.setText(mqttConfig.host);

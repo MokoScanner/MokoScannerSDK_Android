@@ -31,6 +31,7 @@ public class DBTools {
         ContentValues cv = new ContentValues();
         cv.put(DBConstants.DEVICE_FIELD_NAME, mokoDevice.name);
         cv.put(DBConstants.DEVICE_FIELD_NICK_NAME, mokoDevice.nickName);
+        cv.put(DBConstants.DEVICE_FIELD_MQTT_INFO, mokoDevice.mqttInfo);
         cv.put(DBConstants.DEVICE_FIELD_UNIQUE_ID, mokoDevice.uniqueId);
         cv.put(DBConstants.DEVICE_FIELD_TOPIC_PUBLISH, mokoDevice.topicPublish);
         cv.put(DBConstants.DEVICE_FIELD_TOPIC_SUBSCRIBE, mokoDevice.topicSubscribe);
@@ -50,6 +51,8 @@ public class DBTools {
                     .getColumnIndex(DBConstants.DEVICE_FIELD_NAME));
             mokoDevice.nickName = cursor.getString(cursor
                     .getColumnIndex(DBConstants.DEVICE_FIELD_NICK_NAME));
+            mokoDevice.mqttInfo = cursor.getString(cursor
+                    .getColumnIndex(DBConstants.DEVICE_FIELD_MQTT_INFO));
             mokoDevice.uniqueId = cursor.getString(cursor
                     .getColumnIndex(DBConstants.DEVICE_FIELD_UNIQUE_ID));
             mokoDevice.topicPublish = cursor.getString(cursor
@@ -72,6 +75,8 @@ public class DBTools {
                     .getColumnIndex(DBConstants.DEVICE_FIELD_NAME));
             mokoDevice.nickName = cursor.getString(cursor
                     .getColumnIndex(DBConstants.DEVICE_FIELD_NICK_NAME));
+            mokoDevice.mqttInfo = cursor.getString(cursor
+                    .getColumnIndex(DBConstants.DEVICE_FIELD_MQTT_INFO));
             mokoDevice.uniqueId = cursor.getString(cursor
                     .getColumnIndex(DBConstants.DEVICE_FIELD_UNIQUE_ID));
             mokoDevice.topicPublish = cursor.getString(cursor
@@ -94,6 +99,8 @@ public class DBTools {
                     .getColumnIndex(DBConstants.DEVICE_FIELD_NAME));
             mokoDevice.nickName = cursor.getString(cursor
                     .getColumnIndex(DBConstants.DEVICE_FIELD_NICK_NAME));
+            mokoDevice.mqttInfo = cursor.getString(cursor
+                    .getColumnIndex(DBConstants.DEVICE_FIELD_MQTT_INFO));
             mokoDevice.uniqueId = cursor.getString(cursor
                     .getColumnIndex(DBConstants.DEVICE_FIELD_UNIQUE_ID));
             mokoDevice.topicPublish = cursor.getString(cursor
@@ -111,6 +118,7 @@ public class DBTools {
         String[] whereValue = {mokoDevice.name};
         ContentValues cv = new ContentValues();
         cv.put(DBConstants.DEVICE_FIELD_NICK_NAME, mokoDevice.nickName);
+        cv.put(DBConstants.DEVICE_FIELD_MQTT_INFO, mokoDevice.mqttInfo);
         cv.put(DBConstants.DEVICE_FIELD_TOPIC_PUBLISH, mokoDevice.topicPublish);
         cv.put(DBConstants.DEVICE_FIELD_TOPIC_SUBSCRIBE, mokoDevice.topicSubscribe);
         cv.put(DBConstants.DEVICE_FIELD_UNIQUE_ID, mokoDevice.uniqueId);

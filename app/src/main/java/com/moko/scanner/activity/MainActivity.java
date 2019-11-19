@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Message;
-import android.support.annotation.MainThread;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.ListView;
@@ -14,8 +13,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import com.moko.scanner.AppConstants;
 import com.moko.scanner.R;
 import com.moko.scanner.adapter.DeviceAdapter;
@@ -24,22 +21,16 @@ import com.moko.scanner.db.DBTools;
 import com.moko.scanner.dialog.RemoveDialog;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
-import com.moko.scanner.entity.MsgCommon;
-import com.moko.scanner.entity.SwitchInfo;
 import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
 import com.moko.support.handler.BaseMessageHandler;
-import com.moko.support.handler.MQTTMessageAssembler;
 import com.moko.support.log.LogModule;
-import com.moko.support.utils.MokoUtils;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -104,7 +95,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                 if (state == MokoConstants.MQTT_CONN_STATUS_LOST) {
                     title = getString(R.string.mqtt_connecting);
                 } else if (state == MokoConstants.MQTT_CONN_STATUS_SUCCESS) {
-                    title = getString(R.string.guide_center);
+                    title = getString(R.string.app_name);
                 } else if (state == MokoConstants.MQTT_CONN_STATUS_FAILED) {
                     title = getString(R.string.mqtt_connect_failed);
                 }
@@ -166,6 +157,10 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                     for (final MokoDevice device : devices) {
                         if (device.uniqueId.equals(new String(id))) {
                             device.isOnline = true;
+                            Intent i = new Intent(AppConstants.ACTION_DEVICE_STATE);
+                            i.putExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC, topic);
+                            i.putExtra(MokoConstants.EXTRA_MQTT_RECEIVE_STATE, true);
+                            MainActivity.this.sendBroadcast(i);
                             if (mHandler.hasMessages(device.id)) {
                                 mHandler.removeMessages(device.id);
                             }
@@ -210,10 +205,19 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
         setIntent(intent);
         if (getIntent().getExtras() != null) {
             String from = getIntent().getStringExtra(AppConstants.EXTRA_KEY_FROM_ACTIVITY);
+            String uniqueId = getIntent().getStringExtra(AppConstants.EXTRA_KEY_UNIQUE_ID);
             if (ModifyNameActivity.TAG.equals(from)
                     || MoreActivity.TAG.equals(from)) {
                 devices.clear();
                 devices.addAll(DBTools.getInstance(this).selectAllDevice());
+                if (!TextUtils.isEmpty(uniqueId)) {
+                    for (MokoDevice device : devices) {
+                        if (uniqueId.equals(device.uniqueId)) {
+                            device.isOnline = true;
+                            break;
+                        }
+                    }
+                }
                 adapter.notifyDataSetChanged();
                 if (!devices.isEmpty()) {
                     lvDeviceList.setVisibility(View.VISIBLE);
@@ -304,6 +308,10 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                 MainActivity.this.sendBroadcast(i);
                 devices.remove(device);
                 adapter.notifyDataSetChanged();
+                if (devices.isEmpty()) {
+                    rlEmpty.setVisibility(View.VISIBLE);
+                    lvDeviceList.setVisibility(View.GONE);
+                }
                 dialog.dismiss();
             }
         });

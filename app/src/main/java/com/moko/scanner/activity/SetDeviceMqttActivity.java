@@ -30,8 +30,6 @@ import android.widget.TextView;
 
 import com.github.lzyzsd.circleprogress.DonutProgress;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import com.moko.scanner.AppConstants;
 import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
@@ -40,7 +38,6 @@ import com.moko.scanner.dialog.CustomDialog;
 import com.moko.scanner.dialog.KeepAliveDialog;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
-import com.moko.scanner.entity.MsgCommon;
 import com.moko.scanner.fragment.OnewaySSLFragment;
 import com.moko.scanner.fragment.TwowaySSLFragment;
 import com.moko.scanner.service.MokoBlueService;
@@ -51,7 +48,6 @@ import com.moko.support.MokoSupport;
 import com.moko.support.entity.OrderEnum;
 import com.moko.support.entity.OrderTaskResponse;
 import com.moko.support.event.ConnectStatusEvent;
-import com.moko.support.log.LogModule;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.greenrobot.eventbus.EventBus;
@@ -60,9 +56,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.Collections;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -403,16 +397,19 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
                             public void run() {
                                 dismissConnMqttDialog();
                                 MokoDevice mokoDevice = DBTools.getInstance(SetDeviceMqttActivity.this).selectDeviceByName(mSelectedDeviceName);
+                                String mqttConfigStr = new Gson().toJson(mqttConfig, MQTTConfig.class);
                                 if (mokoDevice == null) {
                                     mokoDevice = new MokoDevice();
                                     mokoDevice.name = mSelectedDeviceName;
                                     mokoDevice.nickName = mSelectedDeviceName;
+                                    mokoDevice.mqttInfo = mqttConfigStr;
                                     mokoDevice.topicSubscribe = mqttConfig.topicSubscribe;
                                     mokoDevice.topicPublish = mqttConfig.topicPublish;
                                     mokoDevice.uniqueId = mqttConfig.uniqueId;
                                     DBTools.getInstance(SetDeviceMqttActivity.this).insertDevice(mokoDevice);
                                 } else {
                                     mokoDevice.name = mSelectedDeviceName;
+                                    mokoDevice.mqttInfo = mqttConfigStr;
                                     mokoDevice.topicSubscribe = mqttConfig.topicSubscribe;
                                     mokoDevice.topicPublish = mqttConfig.topicPublish;
                                     mokoDevice.uniqueId = mqttConfig.uniqueId;
@@ -666,8 +663,11 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         if ("{device_name}/{device_id}/device_to_app".equals(mqttConfig.topicPublish)) {
             mqttConfig.topicPublish = String.format("%s/%s/device_to_app", mSelectedDeviceName, deviceId);
         }
-        String mqttConfigStr = new Gson().toJson(mqttConfig, MQTTConfig.class);
-        SPUtiles.setStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_DEVICE, mqttConfigStr);
+        if (!mqttConfig.topicPublish.isEmpty() && !mqttConfig.topicSubscribe.isEmpty()
+                && mqttConfig.topicPublish.equals(mqttConfig.topicSubscribe)) {
+            ToastUtils.showToast(this, "Subscribed and published topic can't be same !");
+            return;
+        }
         showWifiInputDialog();
     }
 

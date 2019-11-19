@@ -14,7 +14,6 @@ import com.google.gson.Gson;
 import com.moko.scanner.AppConstants;
 import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
-import com.moko.scanner.db.DBTools;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.utils.SPUtiles;
@@ -23,7 +22,6 @@ import com.moko.support.MokoConstants;
 import com.moko.support.MokoSupport;
 import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
-import com.moko.support.log.LogModule;
 import com.moko.support.utils.MokoUtils;
 
 import org.eclipse.paho.client.mqttv3.MqttException;

@@ -72,6 +72,7 @@ public class ModifyNameActivity extends BaseActivity {
         // 跳转首页，刷新数据
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(AppConstants.EXTRA_KEY_FROM_ACTIVITY, TAG);
+        intent.putExtra(AppConstants.EXTRA_KEY_UNIQUE_ID, device.uniqueId);
         startActivity(intent);
     }
 
