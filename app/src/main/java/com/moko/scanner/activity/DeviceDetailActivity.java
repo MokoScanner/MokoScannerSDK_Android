@@ -278,9 +278,12 @@ public class DeviceDetailActivity extends BaseActivity {
             if (AppConstants.ACTION_DEVICE_STATE.equals(action)) {
                 String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
                 if (topic.equals(mMokoDevice.topicPublish)) {
-                    mMokoDevice.isOnline = false;
-                    ToastUtils.showToast(DeviceDetailActivity.this, "device is off-line");
-                    finish();
+                    boolean isOnline = intent.getBooleanExtra(MokoConstants.EXTRA_MQTT_RECEIVE_STATE, false);
+                    mMokoDevice.isOnline = isOnline;
+                    if (!isOnline) {
+                        ToastUtils.showToast(DeviceDetailActivity.this, "device is off-line");
+                        finish();
+                    }
                 }
             }
         }

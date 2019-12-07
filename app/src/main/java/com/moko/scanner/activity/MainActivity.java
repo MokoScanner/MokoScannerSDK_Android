@@ -211,9 +211,22 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                 devices.clear();
                 devices.addAll(DBTools.getInstance(this).selectAllDevice());
                 if (!TextUtils.isEmpty(uniqueId)) {
-                    for (MokoDevice device : devices) {
+                    for (final MokoDevice device : devices) {
                         if (uniqueId.equals(device.uniqueId)) {
                             device.isOnline = true;
+                            if (mHandler.hasMessages(device.id)) {
+                                mHandler.removeMessages(device.id);
+                            }
+                            Message message = Message.obtain(mHandler, new Runnable() {
+                                @Override
+                                public void run() {
+                                    device.isOnline = false;
+                                    LogModule.i(device.uniqueId + "离线");
+                                    adapter.notifyDataSetChanged();
+                                }
+                            });
+                            message.what = device.id;
+                            mHandler.sendMessageDelayed(message, 62 * 1000);
                             break;
                         }
                     }

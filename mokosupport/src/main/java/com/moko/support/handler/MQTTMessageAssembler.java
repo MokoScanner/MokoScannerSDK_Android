@@ -54,7 +54,7 @@ public class MQTTMessageAssembler {
         byte[] dataBytes = id.getBytes();
         int dataLength = dataBytes.length;
         byte[] b = new byte[dataLength + 6];
-        b[0] = 0x26;
+        b[0] = 0x27;
         b[1] = (byte) dataLength;
         for (int i = 0; i < dataLength; i++) {
             b[i + 2] = dataBytes[i];
