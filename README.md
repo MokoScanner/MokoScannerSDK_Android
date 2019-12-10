@@ -7,8 +7,9 @@
 ### 1.3	Edit the build.gradle file of the main project:
 
 	dependencies {
-	    implementation fileTree(dir: 'libs', include: ['*.jar'])
-	    implementation project(path: ': mokosupport')
+	    implementation fileTree(include: '*.jar', dir: 'libs')
+	    implementation project(path: ':mokosupport')
+	    ...
 	}
 
 ### 1.4	Import SDK during project initialization:
@@ -19,119 +20,147 @@
 	        super.onCreate();
 	        // initialization
 	        MokoSupport.getInstance().init(getApplicationContext());
+	        Toasty.Config.getInstance().apply();
 	    }
 	}
 
 
 ## 2.Function Introduction
 
-- The methods provided in SDK include: Socket communication with WIFI device, MQTT connection service, disconnection, subscription topic, unsubscribe topic, post topic, log record, etc.
-- Socket communication is called by `SocketService`;
+- The methods provided in SDK include: Scanning bluetooth device, Communicate with bluetooth device, MQTT connection service, disconnection, subscription topic, unsubscribe topic, post topic, log record, etc.
+- Scanning bluetooth device can be called by `MokoSupport.getInstance()`;
+- Communicate with bluetooth device is called by `MokoBlueService`;
 - MQTT communication can be called by `MokoSupport.getInstance()`;
+- Three SSL connections are supported by `MokoService`;
 
-### 2.1 SocketService
+### 2.1 MokoBlueService
 
-Before creating a Socket connection, you need to confirm whether the APP is connected to the WIFI of the device. Connect the default IP address `192.168.4.1`, the default port number is `8266`, which can be modified in `SocketThread`.
+Before connecting the device, it is necessary to press the device for a long time to make the device enter the scan state. After scanning the device, fill in the MQTT information and start the connection after entering the WIFI information
 
-#### 2.1.1 Initialization
+#### 2.1.1 Scanning Device
 
-	bindService(new Intent(this, SocketService.class), mServiceConnection, BIND_AUTO_CREATE);
+Start scanning, call the method`startScanDevice `
 
-Start SocketService, and get the SocketService object, call `mService.startSocket()` to create a Socket thread, connect the device, and the thread waits for the message to be sent after the connection is successful;
+	MokoSupport.getInstance().startScanDevice(MokoScanDeviceCallback mokoScanDeviceCallback)
+	
+Callback
 
-#### 2.1.2 Get connection status and response
+	public interface MokoScanDeviceCallback {
+	    void onStartScan();
+	
+	    void onScanDevice(DeviceInfo device);
+	
+	    void onStopScan();
+	}
 
-1. Get the connection status by registering the broadcast:
+#### 2.1.2 Connectting Device
 
-Broadcast ACTION：`MokoConstants.ACTION_AP_CONNECTION`
+1、Get the connection status by registering the `EventBus.getDefault()` and subscribe `public void onConnectStatusEvent(ConnectStatusEvent event)`:
 
 Connection status：
 
-- Connection successful：`MokoConstants.CONN_STATUS_SUCCESS`
-- connecting：`MokoConstants.CONN_STATUS_CONNECTING`
-- Connection failed：`MokoConstants.CONN_STATUS_FAILED`
-- Connection timeout：`MokoConstants.CONN_STATUS_TIMEOUT`
+- Connection successful：`MokoConstants.ACTION_DISCOVER_SUCCESS`
+- Connection failed：`MokoConstants.ACTION_CONN_STATUS_DISCONNECTED`
 
-2、Get the Socket communication response by registering the broadcast :
+2、Get the communication response by registering the broadcast :
 
-Broadcast ACTION：`MokoConstants.ACTION_AP_SET_DATA_RESPONSE`
+- Order timeout：`MokoConstants.ACTION_ORDER_TIMEOUT`
+- Order all Finish：`MokoConstants.ACTION_ORDER_FINISH`
+- Order response：`MokoConstants.ACTION_ORDER_RESULT`
 
 Get a response：
 
-	DeviceResponse response = (DeviceResponse) intent.getSerializableExtra(MokoConstants.EXTRA_AP_SET_DATA_RESPONSE);
+	OrderTaskResponse response = (OrderTaskResponse) intent.getSerializableExtra(MokoConstants.EXTRA_KEY_RESPONSE_ORDER_TASK);
 
-#### 2.1.3 Socket
+#### 2.1.3 Setting MQTT to Device
 
-Send data only accepts strings in JSON format
+Use this method `MokoSupport.getInstance().sendOrder(OrderTask... orderTasks)` to send the device MQTT configuration information
 
-eg:
+1、Set host:
 
-1、Get device information：
+	ZWriteHostSumTask(MokoOrderTaskCallback callback, String host)
+	ZWriteHostTask(MokoOrderTaskCallback callback, String host)
 
-	{ 
-	          "header" : 4001
-	 }
-	 
-response：
+2、Set port:
+	
+	ZWritePortTask(MokoOrderTaskCallback callback, int port)
+	
+3、Set session:
 
-	 { 
-	     "code" : 0, 
-	     "message" : "success", 
-	     "result" : { 
-	          "header" : 4001, 
-	          "device_function" : "iot_plug", 
-	          "device_name" : "plug_one", 
-	          "device_specifications" : "us", 
-	          "device_mac" : "11:22:33:44:55:66",
-	          "device_type" : "1"
-	     } 
-	 }
-	 
-2、	Send MQTT server information
+	ZWriteSessionTask(MokoOrderTaskCallback callback, int session)
+	
+4、Set deviceId:
 
-	{ 
-	          "header" : 4002, 
-	          "host" : "45.32.33.42", 
-	          "port" : 1883, 
-	          "connect_mode" : 0, 
-	          "username" : "DVES_USER", 
-	          "password" : "DVES_PASS", 
-	          "keepalive" : 120, 
-	          "qos" : 2, 
-	          "clean_session" :1
-	 }
-	 
-response：
+	ZWriteDeviceIdSumTask(MokoOrderTaskCallback callback, String deviceId)
+	ZWriteDeviceIdTask(MokoOrderTaskCallback callback, String deviceId)
+	
+5、Set clientId:
 
-	{ 
-	     "code" : 0, 
-	     "message" : "success", 
-	     "result" : { 
-	         "header" : 4002
-	     } 
-	 }
-	 
-3、Send a WIFI network with a specific SSID
+	ZWriteClientIdSumTask(MokoOrderTaskCallback callback, String clientId)
+	ZWriteClientIdTask(MokoOrderTaskCallback callback, String clientId)
+	
+6、Set username:
 
-	{ 
-	          "header" : 4003, 
-	          "wifi_ssid" : "Fitpolo", 
-	          "wifi_pwd" : "fitpolo1234.", 
-	          "wifi_security" : 3 
-	 }
-	 
-response:
+	ZWriteUsernameSumTask(MokoOrderTaskCallback callback, String username)
+	ZWriteUsernameTask(MokoOrderTaskCallback callback, String username)
+	
+7、Set password
 
-	{ 
-	     "code" : 0, 
-	     "message" : "success", 
-	     "result" : { 
-	       "header" : 4003
-	     } 
-	 }
+	ZWritePasswordSumTask(MokoOrderTaskCallback callback, String password)
+	ZWritePasswordTask(MokoOrderTaskCallback callback, String password)
+	
+8、Set keepAlive
 
+	ZWriteKeepAliveTask(MokoOrderTaskCallback callback, int keepAlive)
 
+9、Set qos
 
+	ZWriteQosTask(MokoOrderTaskCallback callback, int qos)
+
+10、Set connectMode
+
+	ZWriteConnectModeTask(MokoOrderTaskCallback callback, int connectMode)
+
+11、Set CA cert
+
+	ZWriteCASumTask(MokoOrderTaskCallback callback, int dataLength)
+	ZWriteCATask(MokoOrderTaskCallback callback, byte[] fileBytes)
+
+12、Set client cert
+
+	ZWriteClientCertSumTask(MokoOrderTaskCallback callback, int dataLength)
+	ZWriteClientCertTask(MokoOrderTaskCallback callback, byte[] fileBytes)
+	
+13、Set client private key
+
+	ZWriteClientPrivateSumTask(MokoOrderTaskCallback callback, int dataLength)
+	ZWriteClientPrivateTask(MokoOrderTaskCallback callback, byte[] fileBytes)
+	
+14、Set publish topic
+
+	ZWritePublishSumTask(MokoOrderTaskCallback callback, String publishTopic)
+	ZWritePublishask(MokoOrderTaskCallback callback, String publishTopic)
+	
+15、Set Subscribe topic
+
+	ZWriteSubscribeSumTask(MokoOrderTaskCallback callback, String publishTopic)
+	ZWriteSubscribeTask(MokoOrderTaskCallback callback, String publishTopic)
+	
+16、Set WIFI SSID
+
+	ZWriteStaNameSumTask(MokoOrderTaskCallback callback, String satName)
+	ZWriteStaNameTask(MokoOrderTaskCallback callback, String satName)
+	
+17、Set WIFI password
+
+	ZWriteStaPasswordSumTask(MokoOrderTaskCallback callback, String staPassword)
+	ZWriteStaPasswordask(MokoOrderTaskCallback callback, String staPassword)
+	
+18、Start connect(When this command is set, the device disconnects from bluetooth and begins to connect to MQTT)
+
+	ZWriteStartConnectTask(MokoOrderTaskCallback callback)
+	
+	
 ### 2.2	MokoSupport
 
 #### 2.2.1 Connect to the MQTT server
@@ -166,6 +195,7 @@ Broadcast ACTION：`MokoConstants.ACTION_MQTT_CONNECTION`
 Connection status：
 
 - Connection success：`MokoConstants.MQTT_CONN_STATUS_SUCCESS`
+- Connection failed：`MokoConstants.MQTT_CONN_STATUS_FAILED`
 - Disconnect：`MokoConstants.MQTT_CONN_STATUS_LOST`
 
 4、Receive the return data from server by registering the broadcast
@@ -177,15 +207,27 @@ Return data：
 - Return data Topic：`MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC`
 - Return data Message：`MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE`
 
-The return data is in JSON format,eg：
+When connected to the server successfully,the device can publish and subscribe different topics by the server,default topic format：
 
-	{ 
-	          "company_name" : "moko", 
-	          "production_date" : "201801", 
-	          "product_model" : "plug_one", 
-	          "firmware_version" : "000001" 
-	          "device_mac" : "11:22:33:44:55:66"
-	 }
+	device side：{device_name}/{device_id}/device_to_app
+	app side：{device_name}/{device_id}/app_to_device
+
+The return data is array of bytes,refer to the protocol documentation(communication between wifi and app),eg：
+
+	device publish connection to network status
+	
+	Key:0x24
+	device publish：24 02 31 32 00 01 01
+	device id length:02   
+	device id:31 32 （string：“12”）
+	data length：00 01  
+	data（networkstatus）: 01(online)/00(offline）
+
+5、Combine data using `MQTTMessageAssembler` and publish to device,refer to the protocol documentation(communication between wifi and app),eg:
+
+	byte[] message = MQTTMessageAssembler.assembleWriteScanSwitch(String id, boolean scanSwitch)
+	MokoSupport.getInstance().publish(String topic, byte[] message, int qos)
+
 
 #### 2.2.2 Action monitor
 
@@ -258,6 +300,36 @@ Broadcast ACTION：`MokoConstants.ACTION_MQTT_UNSUBSCRIBE`
 
 	MokoSupport.getInstance().disconnectMqtt()
 	
+	
+### 2.3	MokoService
+
+#### 2.3.1 TCP
+
+	mqttConfig.connectMode = 0;
+	...
+	MokoSupport.getInstance().connectMqtt(connOpts);
+	
+#### 2.3.2 SSL(One-way authentication)
+	
+	mqttConfig.connectMode = 1;
+	...
+	connOpts.setSocketFactory(getSingleSocketFactory(mqttConfig.caPath));
+	...
+	MokoSupport.getInstance().connectMqtt(connOpts);
+	
+#### 2.3.3 SSL(Two-way authentication)
+	
+	mqttConfig.connectMode = 3;
+	...
+	connOpts.setSocketFactory(getSocketFactory(mqttConfig.caPath, mqttConfig.clientKeyPath, mqttConfig.clientCertPath));
+	...
+	MokoSupport.getInstance().connectMqtt(connOpts);
+	
+#### 2.3.4 SSL(All Trust)
+
+	mqttConfig.connectMode > 0 && mqttConfig.caPath = null;
+	...
+	connOpts.setSocketFactory(getAllTMSocketFactory());
 
 ## 3.Save Log to SD Card
 
@@ -266,8 +338,8 @@ Broadcast ACTION：`MokoConstants.ACTION_MQTT_UNSUBSCRIBE`
 - The folder name and file name saved on the SD card can be modified.
 
 		public class LogModule {
-			private static final String TAG = "mokoLife";// file name 
-		    private static final String LOG_FOLDER = "mokoLife";// folder name
+			private static final String TAG = "mokoScanner";// file name 
+		    private static final String LOG_FOLDER = "mokoScanner";// folder name
 			...
 		}
 

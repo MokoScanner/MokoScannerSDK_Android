@@ -452,7 +452,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
             // 设备断开，通知页面更新
 //            dismissConnMqttDialog();
             dismissLoadingProgressDialog();
-            ToastUtils.showToast(SetDeviceMqttActivity.this, "Disconnected");
+//            ToastUtils.showToast(SetDeviceMqttActivity.this, "Disconnected");
         }
         if (MokoConstants.ACTION_DISCOVER_SUCCESS.equals(action)) {
             // 设备连接成功，通知页面更新

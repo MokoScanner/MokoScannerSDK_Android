@@ -41,7 +41,7 @@ public class DBTools {
 
     public ArrayList<MokoDevice> selectAllDevice() {
         Cursor cursor = db.query(DBConstants.TABLE_NAME_DEVICE, null, null, null,
-                null, null, null);
+                null, null, DBConstants.DEVICE_FIELD_ID + " DESC");
         ArrayList<MokoDevice> mokoDevices = new ArrayList<>();
         while (cursor.moveToNext()) {
             MokoDevice mokoDevice = new MokoDevice();
