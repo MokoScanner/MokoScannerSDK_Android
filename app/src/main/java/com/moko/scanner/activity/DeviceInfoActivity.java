@@ -41,8 +41,8 @@ public class DeviceInfoActivity extends BaseActivity {
 
     @Bind(R.id.tv_company_name)
     TextView tvCompanyName;
-    @Bind(R.id.tv_device_date)
-    TextView tvDeviceDate;
+//    @Bind(R.id.tv_device_date)
+//    TextView tvDeviceDate;
     @Bind(R.id.tv_device_name)
     TextView tvDeviceName;
     @Bind(R.id.tv_device_version)
@@ -100,22 +100,22 @@ public class DeviceInfoActivity extends BaseActivity {
                     if (mokoDevice.uniqueId.equals(new String(id))) {
                         mokoDevice.company_name = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
                         tvCompanyName.setText(mokoDevice.company_name);
-                        getProductDate();
-                    }
-                }
-                if (header == 0x13)// 读取生产日期
-                {
-                    int length = receive[1] & 0xFF;
-                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
-                    if (mokoDevice.uniqueId.equals(new String(id))) {
-                        mokoDevice.production_date = String.format("%d.%d.%d"
-                                , MokoUtils.toInt(Arrays.copyOfRange(receive, 4 + length, 6 + length))
-                                , receive[receive.length - 2] & 0xFF
-                                , receive[receive.length - 1] & 0xFF);
-                        tvDeviceDate.setText(mokoDevice.production_date);
                         getProductModel();
                     }
                 }
+//                if (header == 0x13)// 读取生产日期
+//                {
+//                    int length = receive[1] & 0xFF;
+//                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
+//                    if (mokoDevice.uniqueId.equals(new String(id))) {
+//                        mokoDevice.production_date = String.format("%d.%d.%d"
+//                                , MokoUtils.toInt(Arrays.copyOfRange(receive, 4 + length, 6 + length))
+//                                , receive[receive.length - 2] & 0xFF
+//                                , receive[receive.length - 1] & 0xFF);
+//                        tvDeviceDate.setText(mokoDevice.production_date);
+//                        getProductModel();
+//                    }
+//                }
                 if (header == 0x1A)// 读取设备型号
                 {
                     int length = receive[1] & 0xFF;
@@ -182,20 +182,20 @@ public class DeviceInfoActivity extends BaseActivity {
         }
     }
 
-    private void getProductDate() {
-        String appTopic;
-        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
-            appTopic = mokoDevice.topicSubscribe;
-        } else {
-            appTopic = appMqttConfig.topicPublish;
-        }
-        byte[] message = MQTTMessageAssembler.assembleReadProductDate(mokoDevice.uniqueId);
-        try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void getProductDate() {
+//        String appTopic;
+//        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+//            appTopic = mokoDevice.topicSubscribe;
+//        } else {
+//            appTopic = appMqttConfig.topicPublish;
+//        }
+//        byte[] message = MQTTMessageAssembler.assembleReadProductDate(mokoDevice.uniqueId);
+//        try {
+//            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+//        } catch (MqttException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void getProductModel() {
         String appTopic;
