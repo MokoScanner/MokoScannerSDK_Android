@@ -1,10 +1,13 @@
 package com.moko.scanner.activity;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -24,10 +27,10 @@ import com.moko.scanner.db.DBTools;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.entity.ScanDevice;
+import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
-import com.moko.support.MokoSupport;
 import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
 import com.moko.support.log.LogModule;
@@ -65,6 +68,7 @@ public class DeviceDetailActivity extends BaseActivity {
     private ArrayList<ScanDevice> mScanDevices;
     private int mPublishType;
     private MQTTConfig appMqttConfig;
+    private MokoService mokoService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,26 +85,39 @@ public class DeviceDetailActivity extends BaseActivity {
         mAdapter.replaceData(mScanDevices);
         rvDevices.setLayoutManager(new LinearLayoutManager(this));
         rvDevices.setAdapter(mAdapter);
-        // 注册广播接收器
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
-        filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
-        filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
-        filter.addAction(AppConstants.ACTION_MODIFY_NAME);
-        filter.addAction(AppConstants.ACTION_DEVICE_STATE);
-        registerReceiver(mReceiver, filter);
-        showLoadingProgressDialog(getString(R.string.wait));
         mHandler = new MessageHandler(this);
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                dismissLoadingProgressDialog();
-                DeviceDetailActivity.this.finish();
-            }
-        }, 30 * 1000);
-        getScanSwitch();
-        getScanInterval();
+        bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
     }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mokoService = ((MokoService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
+            filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
+            filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
+            filter.addAction(AppConstants.ACTION_MODIFY_NAME);
+            filter.addAction(AppConstants.ACTION_DEVICE_STATE);
+            registerReceiver(mReceiver, filter);
+            showLoadingProgressDialog(getString(R.string.wait));
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    dismissLoadingProgressDialog();
+                    DeviceDetailActivity.this.finish();
+                }
+            }, 30 * 1000);
+            getScanSwitch();
+            getScanInterval();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     private void changeView() {
         ivScanSwitch.setImageResource(mScanSwitch ? R.drawable.checkbox_open : R.drawable.checkbox_close);
@@ -115,7 +132,7 @@ public class DeviceDetailActivity extends BaseActivity {
         switch (view.getId()) {
             case R.id.rl_edit_filter:
                 // 获取扫描过滤
-                if (!MokoSupport.getInstance().isConnected()) {
+                if (!mokoService.isConnected()) {
                     ToastUtils.showToast(DeviceDetailActivity.this, R.string.network_error);
                     return;
                 }
@@ -131,7 +148,7 @@ public class DeviceDetailActivity extends BaseActivity {
                 break;
             case R.id.iv_scan_switch:
                 // 切换扫描开关
-                if (!MokoSupport.getInstance().isConnected()) {
+                if (!mokoService.isConnected()) {
                     ToastUtils.showToast(DeviceDetailActivity.this, R.string.network_error);
                     return;
                 }
@@ -153,7 +170,7 @@ public class DeviceDetailActivity extends BaseActivity {
                 break;
             case R.id.tv_save:
                 // 设置扫描间隔
-                if (!MokoSupport.getInstance().isConnected()) {
+                if (!mokoService.isConnected()) {
                     ToastUtils.showToast(DeviceDetailActivity.this, R.string.network_error);
                     return;
                 }
@@ -186,6 +203,7 @@ public class DeviceDetailActivity extends BaseActivity {
             if (MokoConstants.ACTION_MQTT_PUBLISH.equals(action)) {
                 int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
                 if (mPublishType == 1) {
+                    mPublishType = 0;
                     if (state == MokoConstants.MQTT_STATE_SUCCESS) {
                         ToastUtils.showToast(DeviceDetailActivity.this, "Succeed");
                     } else {
@@ -299,7 +317,7 @@ public class DeviceDetailActivity extends BaseActivity {
         mPublishType = 0;
         byte[] message = MQTTMessageAssembler.assembleWriteScanSwitch(mMokoDevice.uniqueId, mScanSwitch);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -315,7 +333,7 @@ public class DeviceDetailActivity extends BaseActivity {
         mPublishType = 1;
         byte[] message = MQTTMessageAssembler.assembleWriteScanInterval(mMokoDevice.uniqueId, mScanInterval);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -330,7 +348,7 @@ public class DeviceDetailActivity extends BaseActivity {
         }
         byte[] message = MQTTMessageAssembler.assembleReadScanSwitch(mMokoDevice.uniqueId);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -345,7 +363,7 @@ public class DeviceDetailActivity extends BaseActivity {
         }
         byte[] message = MQTTMessageAssembler.assembleReadScanInterval(mMokoDevice.uniqueId);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -355,6 +373,7 @@ public class DeviceDetailActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mReceiver);
+        unbindService(serviceConnection);
     }
 
     public void more(View view) {

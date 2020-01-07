@@ -12,7 +12,6 @@ import android.os.Message;
 import android.os.ParcelUuid;
 import android.text.TextUtils;
 
-import com.moko.support.callback.ActionListener;
 import com.moko.support.callback.MokoConnStateCallback;
 import com.moko.support.callback.MokoOrderTaskCallback;
 import com.moko.support.callback.MokoResponseCallback;
@@ -24,7 +23,6 @@ import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MokoCharacteristicHandler;
 import com.moko.support.handler.MokoConnStateHandler;
 import com.moko.support.handler.MokoLeScanHandler;
-import com.moko.support.handler.MqttCallbackHandler;
 import com.moko.support.log.LogModule;
 import com.moko.support.task.OpenNotifyTask;
 import com.moko.support.task.OrderTask;
@@ -42,11 +40,6 @@ import com.moko.support.task.ZWriteSubscribeTask;
 import com.moko.support.task.ZWriteUsernameTask;
 import com.moko.support.utils.BleConnectionCompat;
 import com.moko.support.utils.MokoUtils;
-
-import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -87,9 +80,6 @@ public class MokoSupport implements MokoResponseCallback {
     private static final UUID SERVICE_UUID = UUID.fromString("0000ff19-0000-1000-8000-00805f9b34fb");
 
     private static volatile MokoSupport INSTANCE;
-
-    MqttAndroidClient mqttAndroidClient;
-
 
     private MokoSupport() {
         //no instance
@@ -588,57 +578,6 @@ public class MokoSupport implements MokoResponseCallback {
             } catch (Exception localException) {
                 LogModule.i("An exception occured while refreshing device");
             }
-        }
-        return false;
-    }
-
-    public MqttAndroidClient creatClient(String host, String port, String clientId, boolean tlsConnection) {
-        String uri;
-        if (tlsConnection) {
-            uri = "ssl://" + host + ":" + port;
-        } else {
-            uri = "tcp://" + host + ":" + port;
-        }
-        mqttAndroidClient = new MqttAndroidClient(mContext, uri, clientId);
-        mqttAndroidClient.setCallback(new MqttCallbackHandler(mContext));
-        return mqttAndroidClient;
-    }
-
-    public void connectMqtt(MqttConnectOptions options) throws MqttException {
-        if (mqttAndroidClient != null) {
-            mqttAndroidClient.connect(options, null, new ActionListener(mContext, ActionListener.Action.CONNECT));
-        }
-    }
-
-
-    public void disconnectMqtt() throws MqttException {
-        if (mqttAndroidClient != null) {
-            mqttAndroidClient.disconnect();
-            mqttAndroidClient = null;
-        }
-    }
-
-    public void subscribe(String topic, int qos) throws MqttException {
-        if (mqttAndroidClient != null) {
-            mqttAndroidClient.subscribe(topic, qos, null, new ActionListener(mContext, ActionListener.Action.SUBSCRIBE));
-        }
-    }
-
-    public void unSubscribe(String topic) throws MqttException {
-        if (mqttAndroidClient != null) {
-            mqttAndroidClient.unsubscribe(topic, null, new ActionListener(mContext, ActionListener.Action.UNSUBSCRIBE));
-        }
-    }
-
-    public void publish(String topic, byte[] message, int qos) throws MqttException {
-        if (mqttAndroidClient != null) {
-            mqttAndroidClient.publish(topic, message, qos, false, null, new ActionListener(mContext, ActionListener.Action.PUBLISH));
-        }
-    }
-
-    public boolean isConnected() {
-        if (mqttAndroidClient != null) {
-            return mqttAndroidClient.isConnected();
         }
         return false;
     }

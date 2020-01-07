@@ -4,11 +4,14 @@ import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.annotation.IdRes;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
@@ -85,6 +88,7 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
 
 
     private MQTTConfig mqttConfig;
+    private MokoService mokoService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,11 +105,24 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
         fragmentManager = getFragmentManager();
         createFragment();
         initData();
-        // 注册广播接收器
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
-        registerReceiver(mReceiver, filter);
+        bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
     }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mokoService = ((MokoService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
+            registerReceiver(mReceiver, filter);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     private void createFragment() {
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -257,12 +274,12 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
 
         String mqttConfigStr = new Gson().toJson(mqttConfig, MQTTConfig.class);
         SPUtiles.setStringValue(this, AppConstants.SP_KEY_MQTT_CONFIG_APP, mqttConfigStr);
-        stopService(new Intent(this, MokoService.class));
+        mokoService.disconnectMqtt();
         showLoadingProgressDialog(getString(R.string.mqtt_connecting));
         tvKeepAlive.postDelayed(new Runnable() {
             @Override
             public void run() {
-                startService(new Intent(SetAppMqttActivity.this, MokoService.class));
+                mokoService.connectMqtt();
             }
         }, 2000);
 
@@ -272,6 +289,7 @@ public class SetAppMqttActivity extends BaseActivity implements RadioGroup.OnChe
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mReceiver);
+        unbindService(serviceConnection);
     }
 
     public void cleanSession(View view) {

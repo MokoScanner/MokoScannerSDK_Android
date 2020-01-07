@@ -1,10 +1,13 @@
 package com.moko.scanner.activity;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Message;
 import android.text.TextUtils;
 import android.view.View;
@@ -25,7 +28,6 @@ import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
-import com.moko.support.MokoSupport;
 import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.log.LogModule;
 
@@ -53,6 +55,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
     TextView tvTitle;
     private ArrayList<MokoDevice> devices;
     private DeviceAdapter adapter;
+    private MokoService mokoService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,18 +75,33 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
             rlEmpty.setVisibility(View.GONE);
         }
         mHandler = new OfflineHandler(this);
-        // 注册广播接收器
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
-        filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
-        filter.addAction(MokoConstants.ACTION_MQTT_SUBSCRIBE);
-        filter.addAction(MokoConstants.ACTION_MQTT_UNSUBSCRIBE);
-        filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
-        filter.addAction(AppConstants.ACTION_MODIFY_NAME);
-        filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
-        registerReceiver(mReceiver, filter);
+
+
         startService(new Intent(this, MokoService.class));
+        bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
     }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mokoService = ((MokoService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
+            filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
+            filter.addAction(MokoConstants.ACTION_MQTT_SUBSCRIBE);
+            filter.addAction(MokoConstants.ACTION_MQTT_UNSUBSCRIBE);
+            filter.addAction(MokoConstants.ACTION_MQTT_PUBLISH);
+            filter.addAction(AppConstants.ACTION_MODIFY_NAME);
+            filter.addAction(AppConstants.ACTION_DELETE_DEVICE);
+            registerReceiver(mReceiver, filter);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -102,7 +120,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                 tvTitle.setText(title);
                 if (state == 1) {
 //                    try {
-//                        MokoSupport.getInstance().subscribe("lwz_123", 1);
+//                        mokoService.subscribe("lwz_123", 1);
 //                    } catch (MqttException e) {
 //                        e.printStackTrace();
 //                    }
@@ -111,7 +129,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
                     // 订阅
                     try {
                         if (!TextUtils.isEmpty(appMqttConfig.topicSubscribe)) {
-                            MokoSupport.getInstance().subscribe(appMqttConfig.topicSubscribe, appMqttConfig.qos);
+                            mokoService.subscribe(appMqttConfig.topicSubscribe, appMqttConfig.qos);
                         }
                     } catch (MqttException e) {
                         e.printStackTrace();
@@ -124,7 +142,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
 //                        for (String topic : device.getDeviceTopics()) {
                         try {
                             if (TextUtils.isEmpty(appMqttConfig.topicSubscribe)) {
-                                MokoSupport.getInstance().subscribe(device.topicPublish, appMqttConfig.qos);
+                                mokoService.subscribe(device.topicPublish, appMqttConfig.qos);
                             }
                         } catch (MqttException e) {
                             e.printStackTrace();
@@ -247,6 +265,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mReceiver);
+        unbindService(serviceConnection);
         stopService(new Intent(this, MokoService.class));
     }
 
@@ -259,7 +278,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
 //        message.setPayload("332211".getBytes());
 //        message.setQos(1);
 //        try {
-//            MokoSupport.getInstance().publish("lwz_321", message);
+//            mokoService.publish("lwz_321", message);
 //        } catch (MqttException e) {
 //            e.printStackTrace();
 //        }
@@ -284,7 +303,7 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
 
     @Override
     public void deviceDetailClick(MokoDevice device) {
-        if (!MokoSupport.getInstance().isConnected()) {
+        if (!mokoService.isConnected()) {
             ToastUtils.showToast(this, R.string.network_error);
             return;
         }
@@ -303,14 +322,14 @@ public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterC
         dialog.setListener(new RemoveDialog.RemoveListener() {
             @Override
             public void onConfirmClick(RemoveDialog dialog) {
-                if (!MokoSupport.getInstance().isConnected()) {
+                if (!mokoService.isConnected()) {
                     ToastUtils.showToast(MainActivity.this, R.string.network_error);
                     return;
                 }
                 showLoadingProgressDialog(getString(R.string.wait));
                 // 取消订阅
                 try {
-                    MokoSupport.getInstance().unSubscribe(device.topicPublish);
+                    mokoService.unSubscribe(device.topicPublish);
                 } catch (MqttException e) {
                     e.printStackTrace();
                 }

@@ -41,6 +41,7 @@ import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.fragment.OnewaySSLFragment;
 import com.moko.scanner.fragment.TwowaySSLFragment;
 import com.moko.scanner.service.MokoBlueService;
+import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
@@ -132,6 +133,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
     private boolean isDeviceConnectSuccess;
     private MQTTConfig mAppMqttConfig;
     private File mFile;
+    private MokoService mokoService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,6 +169,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
 //        filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
 //        registerReceiver(mReceiver, filter);
         bindService(new Intent(this, MokoBlueService.class), mServiceConnection, BIND_AUTO_CREATE);
+        bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
         EventBus.getDefault().register(this);
     }
 
@@ -189,6 +192,18 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+        }
+    };
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mokoService = ((MokoService.LocalBinder) service).getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
         }
     };
 
@@ -438,7 +453,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
         // 订阅
         try {
             if (TextUtils.isEmpty(mAppMqttConfig.topicSubscribe)) {
-                MokoSupport.getInstance().subscribe(mqttConfig.topicPublish, mAppMqttConfig.qos);
+                mokoService.subscribe(mqttConfig.topicPublish, mAppMqttConfig.qos);
             }
         } catch (MqttException e) {
             e.printStackTrace();
@@ -473,6 +488,7 @@ public class SetDeviceMqttActivity extends BaseActivity implements RadioGroup.On
             unregisterReceiver(mReceiver);
         }
         unbindService(mServiceConnection);
+        unbindService(serviceConnection);
         EventBus.getDefault().unregister(this);
     }
 

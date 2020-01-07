@@ -1,10 +1,13 @@
 package com.moko.scanner.activity;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
@@ -17,10 +20,10 @@ import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.dialog.UpdateTypeDialog;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
+import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
-import com.moko.support.MokoSupport;
 import com.moko.support.handler.MQTTMessageAssembler;
 import com.moko.support.log.LogModule;
 
@@ -55,6 +58,8 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
 
     private String[] mUpdateType;
 
+    private MokoService mokoService;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,17 +70,31 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
         }
         mUpdateType = getResources().getStringArray(R.array.update_type);
         tvUpdateType.setText(mUpdateType[0]);
-        // 注册广播接收器
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
-        filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
-        filter.addAction(MokoConstants.ACTION_MQTT_SUBSCRIBE);
-        filter.addAction(MokoConstants.ACTION_MQTT_UNSUBSCRIBE);
-        filter.addAction(AppConstants.ACTION_DEVICE_STATE);
-        registerReceiver(mReceiver, filter);
+
         String mqttConfigAppStr = SPUtiles.getStringValue(CheckFirmwareUpdateActivity.this, AppConstants.SP_KEY_MQTT_CONFIG_APP, "");
         appMqttConfig = new Gson().fromJson(mqttConfigAppStr, MQTTConfig.class);
+        bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
     }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mokoService = ((MokoService.LocalBinder) service).getService();
+            // 注册广播接收器
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(MokoConstants.ACTION_MQTT_CONNECTION);
+            filter.addAction(MokoConstants.ACTION_MQTT_RECEIVE);
+            filter.addAction(MokoConstants.ACTION_MQTT_SUBSCRIBE);
+            filter.addAction(MokoConstants.ACTION_MQTT_UNSUBSCRIBE);
+            filter.addAction(AppConstants.ACTION_DEVICE_STATE);
+            registerReceiver(mReceiver, filter);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -123,7 +142,7 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
     }
 
     public void startUpdate(View view) {
-        if (!MokoSupport.getInstance().isConnected()) {
+        if (!mokoService.isConnected()) {
             ToastUtils.showToast(this, R.string.network_error);
             return;
         }
@@ -157,6 +176,7 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(mReceiver);
+        unbindService(serviceConnection);
     }
 
     private int mSelected;
@@ -183,7 +203,7 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
         }
         byte[] message = MQTTMessageAssembler.assembleWriteOTAType(mokoDevice.uniqueId, mSelected + 1);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -198,7 +218,7 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
         }
         byte[] message = MQTTMessageAssembler.assembleWriteHostAndPort(mokoDevice.uniqueId, host, port);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -213,7 +233,7 @@ public class CheckFirmwareUpdateActivity extends BaseActivity {
         }
         byte[] message = MQTTMessageAssembler.assembleWriteCatalogue(mokoDevice.uniqueId, catalogue);
         try {
-            MokoSupport.getInstance().publish(appTopic, message, appMqttConfig.qos);
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
             e.printStackTrace();
         }
