@@ -312,12 +312,6 @@ public class MoreActivity extends BaseActivity {
         dialog.show();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unregisterReceiver(mReceiver);
-        unbindService(serviceConnection);
-    }
 
     public void mqttSettingForDevice(View view) {
         Intent i = new Intent(MoreActivity.this, SettingForDeviceActivity.class);
@@ -325,6 +319,19 @@ public class MoreActivity extends BaseActivity {
         startActivity(i);
     }
 
+
+    public void ledSetting(View view) {
+        Intent i = new Intent(MoreActivity.this, LEDSettingActivity.class);
+        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mokoDevice);
+        startActivity(i);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mReceiver);
+        unbindService(serviceConnection);
+    }
 
     //弹出软键盘
     public void showKeyboard(EditText editText) {

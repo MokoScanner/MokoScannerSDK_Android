@@ -12,8 +12,11 @@ import android.os.Message;
 import android.text.InputFilter;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -22,17 +25,22 @@ import com.moko.scanner.AppConstants;
 import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.db.DBTools;
+import com.moko.scanner.dialog.FilterDelDialog;
 import com.moko.scanner.entity.MQTTConfig;
 import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.service.MokoService;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.scanner.utils.ToastUtils;
 import com.moko.support.MokoConstants;
+import com.moko.support.entity.DataTypeEnum;
+import com.moko.support.entity.FilterRawData;
 import com.moko.support.handler.BaseMessageHandler;
 import com.moko.support.handler.MQTTMessageAssembler;
+import com.moko.support.utils.MokoUtils;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import butterknife.Bind;
@@ -51,10 +59,32 @@ public class ScanFilterActivity extends BaseActivity {
     TextView tvRssi;
     @Bind(R.id.et_filter_name)
     EditText etFilterName;
+    @Bind(R.id.ll_rssi)
+    LinearLayout llRssi;
+    @Bind(R.id.iv_name_filter)
+    ImageView ivNameFilter;
+    @Bind(R.id.iv_mac_filter)
+    ImageView ivMacFilter;
+    @Bind(R.id.et_filter_mac)
+    EditText etFilterMac;
+    @Bind(R.id.iv_raw_data_filter)
+    ImageView ivRawDataFilter;
+    @Bind(R.id.iv_raw_data_del)
+    ImageView ivRawDataDel;
+    @Bind(R.id.iv_raw_data_add)
+    ImageView ivRawDataAdd;
+    @Bind(R.id.ll_raw_data_filter)
+    LinearLayout llRawDataFilter;
     private MokoDevice mMokoDevice;
     private int mPublishType;
     private int mFilterRSSI;
     private String mFilterName;
+    private String mFilterMac;
+    private int mFilterRawDataSumLength;
+    private ArrayList<FilterRawData> filterRawDatas;
+    private boolean isFilterNameOpen;
+    private boolean isFilterMacOpen;
+    private boolean isFilterRawDataOpen;
     private MQTTConfig appMqttConfig;
     private MokoService mokoService;
 
@@ -98,7 +128,7 @@ public class ScanFilterActivity extends BaseActivity {
                 return null;
             }
         };
-        etFilterName.setFilters(new InputFilter[]{new InputFilter.LengthFilter(11), inputFilter});
+        etFilterName.setFilters(new InputFilter[]{new InputFilter.LengthFilter(30), inputFilter});
         mHandler = new MessageHandler(this);
         bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
     }
@@ -125,6 +155,8 @@ public class ScanFilterActivity extends BaseActivity {
             }, 30 * 1000);
             getFilterRSSI();
             getFilterName();
+            getFilterMac();
+            getFilterRawData();
         }
 
         @Override
@@ -143,13 +175,28 @@ public class ScanFilterActivity extends BaseActivity {
             }
             if (MokoConstants.ACTION_MQTT_PUBLISH.equals(action)) {
                 int state = intent.getIntExtra(MokoConstants.EXTRA_MQTT_STATE, 0);
-                if (mPublishType == 0) {
-                    if (state == MokoConstants.MQTT_STATE_SUCCESS) {
-                        setFilterName();
+                if (state == MokoConstants.MQTT_STATE_SUCCESS) {
+                    switch (mPublishType) {
+                        case 0:
+                            if (isFilterNameOpen) {
+                                setFilterName();
+                                return;
+                            }
+                            break;
+                        case 1:
+                            if (isFilterMacOpen) {
+                                setFilterMac();
+                                return;
+                            }
+                            break;
+                        case 2:
+                            if (isFilterRawDataOpen) {
+                                setFilterRawData();
+                                return;
+                            }
+                            break;
                     }
-                }
-                if (mPublishType == 1) {
-                    if (state == MokoConstants.MQTT_STATE_SUCCESS) {
+                    if (mPublishType > 0) {
                         dismissLoadingProgressDialog();
                         ToastUtils.showToast(ScanFilterActivity.this, "Succeed");
                         mHandler.removeMessages(1);
@@ -175,10 +222,86 @@ public class ScanFilterActivity extends BaseActivity {
                     int length = receive[1] & 0xFF;
                     byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
                     if (mMokoDevice.uniqueId.equals(new String(id))) {
-                        dismissLoadingProgressDialog();
+                        byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
+                        int dataLength = MokoUtils.toInt(dataLengthBytes);
+                        if (dataLength == 0) {
+                            ivNameFilter.setImageResource(R.drawable.ic_cb_close);
+                            etFilterName.setVisibility(View.GONE);
+                            return;
+                        }
+                        isFilterNameOpen = true;
+                        ivNameFilter.setImageResource(R.drawable.ic_cb_open);
+                        etFilterName.setVisibility(View.VISIBLE);
                         mFilterName = new String(Arrays.copyOfRange(receive, 4 + length, receive.length));
                         etFilterName.setText(mFilterName);
+                    }
+                }
+                if (header == 0x1d)// 过滤扫描MAC
+                {
+                    int length = receive[1] & 0xFF;
+                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
+                    if (mMokoDevice.uniqueId.equals(new String(id))) {
+                        byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
+                        int dataLength = MokoUtils.toInt(dataLengthBytes);
+                        if (dataLength == 0) {
+                            ivMacFilter.setImageResource(R.drawable.ic_cb_close);
+                            etFilterMac.setVisibility(View.GONE);
+                            return;
+                        }
+                        isFilterMacOpen = true;
+                        ivMacFilter.setImageResource(R.drawable.ic_cb_open);
+                        etFilterMac.setVisibility(View.VISIBLE);
+
+                        mFilterMac = MokoUtils.bytesToHexString(Arrays.copyOfRange(receive, 4 + length, receive.length));
+                        etFilterMac.setText(mFilterMac);
+                    }
+                }
+                if (header == 0x1c)// 过滤扫描原始数据
+                {
+                    int length = receive[1] & 0xFF;
+                    byte[] id = Arrays.copyOfRange(receive, 2, 2 + length);
+                    if (mMokoDevice.uniqueId.equals(new String(id))) {
+                        dismissLoadingProgressDialog();
                         mHandler.removeMessages(0);
+                        byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
+                        int dataLength = MokoUtils.toInt(dataLengthBytes);
+                        if (dataLength == 0) {
+                            ivRawDataFilter.setImageResource(R.drawable.ic_cb_close);
+                            llRawDataFilter.setVisibility(View.GONE);
+                            ivRawDataAdd.setVisibility(View.GONE);
+                            ivRawDataDel.setVisibility(View.GONE);
+                            return;
+                        }
+                        isFilterRawDataOpen = true;
+                        ivRawDataFilter.setImageResource(R.drawable.ic_cb_open);
+                        llRawDataFilter.setVisibility(View.VISIBLE);
+                        ivRawDataAdd.setVisibility(View.VISIBLE);
+                        ivRawDataDel.setVisibility(View.VISIBLE);
+
+                        byte[] dataBytes = Arrays.copyOfRange(receive, 4 + length, receive.length);
+
+                        for (int i = 0, l = dataBytes.length; i < l; ) {
+                            View v = LayoutInflater.from(ScanFilterActivity.this).inflate(R.layout.item_raw_data_filter, llRawDataFilter, false);
+                            EditText etDataType = ButterKnife.findById(v, R.id.et_data_type);
+                            EditText etMin = ButterKnife.findById(v, R.id.et_min);
+                            EditText etMax = ButterKnife.findById(v, R.id.et_max);
+                            EditText etRawData = ButterKnife.findById(v, R.id.et_raw_data);
+                            int filterLength = dataBytes[i] & 0xFF;
+                            i++;
+                            String type = MokoUtils.byte2HexString(dataBytes[i]);
+                            i++;
+                            String min = String.valueOf((dataBytes[i] & 0xFF));
+                            i++;
+                            String max = String.valueOf((dataBytes[i] & 0xFF));
+                            i++;
+                            String data = MokoUtils.bytesToHexString(Arrays.copyOfRange(dataBytes, i, i + filterLength - 3));
+                            i += filterLength - 3;
+                            etDataType.setText(type);
+                            etMin.setText(min);
+                            etMax.setText(max);
+                            etRawData.setText(data);
+                            llRawDataFilter.addView(v);
+                        }
                     }
                 }
             }
@@ -210,13 +333,11 @@ public class ScanFilterActivity extends BaseActivity {
         finish();
     }
 
-    @OnClick({R.id.tv_cancel, R.id.tv_confirm})
+    @OnClick({R.id.tv_done, R.id.iv_name_filter, R.id.iv_mac_filter,
+            R.id.iv_raw_data_filter, R.id.iv_raw_data_add, R.id.iv_raw_data_del})
     public void onViewClicked(View view) {
         switch (view.getId()) {
-            case R.id.tv_cancel:
-                finish();
-                break;
-            case R.id.tv_confirm:
+            case R.id.tv_done:
                 if (!mokoService.isConnected()) {
                     ToastUtils.showToast(this, R.string.network_error);
                     return;
@@ -225,8 +346,10 @@ public class ScanFilterActivity extends BaseActivity {
                     ToastUtils.showToast(this, R.string.device_offline);
                     return;
                 }
-                // 发送设置的过滤RSSI和名字
-                mFilterName = etFilterName.getText().toString();
+                if (!isVaild()) {
+                    ToastUtils.showToast(this, "Params error");
+                    return;
+                }
                 Message message = Message.obtain(mHandler, new Runnable() {
                     @Override
                     public void run() {
@@ -238,7 +361,119 @@ public class ScanFilterActivity extends BaseActivity {
                 showLoadingProgressDialog(getString(R.string.wait));
                 setFilterRSSI();
                 break;
+            case R.id.iv_name_filter:
+                isFilterNameOpen = !isFilterNameOpen;
+                ivNameFilter.setImageResource(isFilterNameOpen ? R.drawable.ic_cb_open : R.drawable.ic_cb_close);
+                etFilterName.setVisibility(isFilterNameOpen ? View.VISIBLE : View.GONE);
+                break;
+            case R.id.iv_mac_filter:
+                isFilterMacOpen = !isFilterMacOpen;
+                ivMacFilter.setImageResource(isFilterMacOpen ? R.drawable.ic_cb_open : R.drawable.ic_cb_close);
+                etFilterMac.setVisibility(isFilterMacOpen ? View.VISIBLE : View.GONE);
+                break;
+            case R.id.iv_raw_data_filter:
+                isFilterRawDataOpen = !isFilterRawDataOpen;
+                ivRawDataFilter.setImageResource(isFilterRawDataOpen ? R.drawable.ic_cb_open : R.drawable.ic_cb_close);
+                llRawDataFilter.setVisibility(isFilterRawDataOpen ? View.VISIBLE : View.GONE);
+                ivRawDataAdd.setVisibility(isFilterRawDataOpen ? View.VISIBLE : View.GONE);
+                ivRawDataDel.setVisibility(isFilterRawDataOpen ? View.VISIBLE : View.GONE);
+                break;
+            case R.id.iv_raw_data_add:
+                int count = llRawDataFilter.getChildCount();
+                if (count > 4)
+                    return;
+                View v = LayoutInflater.from(ScanFilterActivity.this).inflate(R.layout.item_raw_data_filter, llRawDataFilter, false);
+                llRawDataFilter.addView(v);
+                break;
+            case R.id.iv_raw_data_del:
+                FilterDelDialog dialog = new FilterDelDialog(this);
+                dialog.setListener(new FilterDelDialog.FilterDelListener() {
+                    @Override
+                    public void onConfirmClick(FilterDelDialog dialog) {
+                        int count = llRawDataFilter.getChildCount();
+                        if (count > 0) {
+                            llRawDataFilter.removeViewAt(count - 1);
+                        }
+                        dialog.dismiss();
+                    }
+                });
+                dialog.show();
+                break;
         }
+    }
+
+    private boolean isVaild() {
+        if (isFilterNameOpen) {
+            // 发送设置的过滤名字
+            mFilterName = etFilterName.getText().toString();
+            if (TextUtils.isEmpty(mFilterName))
+                return false;
+        }
+        if (isFilterMacOpen) {
+            // 发送设置的过滤MAC
+            mFilterMac = etFilterMac.getText().toString();
+            if (TextUtils.isEmpty(mFilterMac))
+                return false;
+            if (mFilterMac.length() != 12)
+                return false;
+        }
+
+        if (isFilterRawDataOpen) {
+            // 发送设置的过滤RawData
+            int count = llRawDataFilter.getChildCount();
+            if (count == 0)
+                return false;
+            filterRawDatas = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                FilterRawData rawData = new FilterRawData();
+                View v = llRawDataFilter.getChildAt(i);
+                EditText etDataType = ButterKnife.findById(v, R.id.et_data_type);
+                EditText etMin = ButterKnife.findById(v, R.id.et_min);
+                EditText etMax = ButterKnife.findById(v, R.id.et_max);
+                EditText etRawData = ButterKnife.findById(v, R.id.et_raw_data);
+                final String dataTypeStr = etDataType.getText().toString();
+                final String minStr = etMin.getText().toString();
+                final String maxStr = etMax.getText().toString();
+                final String rawDataStr = etRawData.getText().toString();
+
+                if (TextUtils.isEmpty(dataTypeStr))
+                    return false;
+
+                final int dataType = Integer.parseInt(dataTypeStr, 16);
+                final DataTypeEnum dataTypeEnum = DataTypeEnum.fromDataType(dataType);
+                if (dataTypeEnum == null)
+                    return false;
+                if (TextUtils.isEmpty(rawDataStr))
+                    return false;
+                int length = rawDataStr.length();
+                if (length % 2 != 0)
+                    return false;
+                int min = 0;
+                if (!TextUtils.isEmpty(minStr))
+                    min = Integer.parseInt(minStr);
+                int max = 0;
+                if (!TextUtils.isEmpty(maxStr))
+                    max = Integer.parseInt(maxStr);
+                if (min > 29)
+                    return false;
+                if (max > 29)
+                    return false;
+                if (max < min)
+                    return false;
+                int interval = max - min;
+
+                if (interval > 0 && length != ((interval + 1) * 2))
+                    return false;
+                rawData.rawDataLength = 3 + length / 2;
+                rawData.deviceType = dataType;
+                rawData.min = min;
+                rawData.max = max;
+                rawData.rawData = rawDataStr;
+                mFilterRawDataSumLength += rawData.rawDataLength + 1;
+                filterRawDatas.add(rawData);
+            }
+        }
+        return true;
     }
 
     private void setFilterRSSI() {
@@ -274,6 +509,38 @@ public class ScanFilterActivity extends BaseActivity {
         }
     }
 
+    private void setFilterMac() {
+        String appTopic;
+        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+            appTopic = mMokoDevice.topicSubscribe;
+        } else {
+            appTopic = appMqttConfig.topicPublish;
+        }
+        mPublishType = 2;
+        byte[] message = MQTTMessageAssembler.assembleWriteFilterMAC(mMokoDevice.uniqueId, mFilterMac);
+        try {
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setFilterRawData() {
+        String appTopic;
+        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+            appTopic = mMokoDevice.topicSubscribe;
+        } else {
+            appTopic = appMqttConfig.topicPublish;
+        }
+        mPublishType = 3;
+        byte[] message = MQTTMessageAssembler.assembleWriteFilterRawData(mMokoDevice.uniqueId, mFilterRawDataSumLength, filterRawDatas);
+        try {
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void getFilterRSSI() {
         String appTopic;
         if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
@@ -299,6 +566,38 @@ public class ScanFilterActivity extends BaseActivity {
         }
         mPublishType = -1;
         byte[] message = MQTTMessageAssembler.assembleReadFilterName(mMokoDevice.uniqueId);
+        try {
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getFilterMac() {
+        String appTopic;
+        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+            appTopic = mMokoDevice.topicSubscribe;
+        } else {
+            appTopic = appMqttConfig.topicPublish;
+        }
+        mPublishType = -1;
+        byte[] message = MQTTMessageAssembler.assembleReadFilterMac(mMokoDevice.uniqueId);
+        try {
+            mokoService.publish(appTopic, message, appMqttConfig.qos);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getFilterRawData() {
+        String appTopic;
+        if (TextUtils.isEmpty(appMqttConfig.topicPublish)) {
+            appTopic = mMokoDevice.topicSubscribe;
+        } else {
+            appTopic = appMqttConfig.topicPublish;
+        }
+        mPublishType = -1;
+        byte[] message = MQTTMessageAssembler.assembleReadFilterRawData(mMokoDevice.uniqueId);
         try {
             mokoService.publish(appTopic, message, appMqttConfig.qos);
         } catch (MqttException e) {
