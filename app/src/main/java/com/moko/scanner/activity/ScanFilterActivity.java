@@ -128,7 +128,7 @@ public class ScanFilterActivity extends BaseActivity {
                 return null;
             }
         };
-        etFilterName.setFilters(new InputFilter[]{new InputFilter.LengthFilter(30), inputFilter});
+        etFilterName.setFilters(new InputFilter[]{new InputFilter.LengthFilter(29), inputFilter});
         mHandler = new MessageHandler(this);
         bindService(new Intent(this, MokoService.class), serviceConnection, Context.BIND_AUTO_CREATE);
     }
@@ -178,28 +178,20 @@ public class ScanFilterActivity extends BaseActivity {
                 if (state == MokoConstants.MQTT_STATE_SUCCESS) {
                     switch (mPublishType) {
                         case 0:
-                            if (isFilterNameOpen) {
-                                setFilterName();
-                                return;
-                            }
-                            break;
+                            setFilterName();
+                            return;
                         case 1:
-                            if (isFilterMacOpen) {
-                                setFilterMac();
-                                return;
-                            }
-                            break;
+                            setFilterMac();
+                            return;
                         case 2:
-                            if (isFilterRawDataOpen) {
-                                setFilterRawData();
-                                return;
-                            }
-                            break;
+                            setFilterRawData();
+                            return;
                     }
-                    if (mPublishType > 0) {
+                    if (mPublishType == 3) {
                         dismissLoadingProgressDialog();
                         ToastUtils.showToast(ScanFilterActivity.this, "Succeed");
                         mHandler.removeMessages(1);
+                        finish();
                     }
                 }
             }
@@ -380,19 +372,25 @@ public class ScanFilterActivity extends BaseActivity {
                 break;
             case R.id.iv_raw_data_add:
                 int count = llRawDataFilter.getChildCount();
-                if (count > 4)
+                if (count > 4) {
+                    ToastUtils.showToast(this, "You can set up to 5 filters!");
                     return;
+                }
                 View v = LayoutInflater.from(ScanFilterActivity.this).inflate(R.layout.item_raw_data_filter, llRawDataFilter, false);
                 llRawDataFilter.addView(v);
                 break;
             case R.id.iv_raw_data_del:
+                final int c = llRawDataFilter.getChildCount();
+                if (c == 0) {
+                    ToastUtils.showToast(this, "There are currently no filters to delete");
+                    return;
+                }
                 FilterDelDialog dialog = new FilterDelDialog(this);
                 dialog.setListener(new FilterDelDialog.FilterDelListener() {
                     @Override
                     public void onConfirmClick(FilterDelDialog dialog) {
-                        int count = llRawDataFilter.getChildCount();
-                        if (count > 0) {
-                            llRawDataFilter.removeViewAt(count - 1);
+                        if (c > 0) {
+                            llRawDataFilter.removeViewAt(c - 1);
                         }
                         dialog.dismiss();
                     }
@@ -408,6 +406,8 @@ public class ScanFilterActivity extends BaseActivity {
             mFilterName = etFilterName.getText().toString();
             if (TextUtils.isEmpty(mFilterName))
                 return false;
+        } else {
+            mFilterName = "";
         }
         if (isFilterMacOpen) {
             // 发送设置的过滤MAC
@@ -416,14 +416,17 @@ public class ScanFilterActivity extends BaseActivity {
                 return false;
             if (mFilterMac.length() != 12)
                 return false;
+        } else {
+            mFilterMac = "";
         }
-
+        filterRawDatas = new ArrayList<>();
+        mFilterRawDataSumLength = 0;
         if (isFilterRawDataOpen) {
             // 发送设置的过滤RawData
             int count = llRawDataFilter.getChildCount();
             if (count == 0)
                 return false;
-            filterRawDatas = new ArrayList<>();
+
             for (int i = 0; i < count; i++) {
                 FilterRawData rawData = new FilterRawData();
                 View v = llRawDataFilter.getChildAt(i);
@@ -454,16 +457,19 @@ public class ScanFilterActivity extends BaseActivity {
                 int max = 0;
                 if (!TextUtils.isEmpty(maxStr))
                     max = Integer.parseInt(maxStr);
+                if (min == 0 && max != 0)
+                    return false;
                 if (min > 29)
                     return false;
                 if (max > 29)
                     return false;
                 if (max < min)
                     return false;
-                int interval = max - min;
-
-                if (interval > 0 && length != ((interval + 1) * 2))
-                    return false;
+                if (min > 0) {
+                    int interval = max - min;
+                    if (interval > 0 && length != ((interval + 1) * 2))
+                        return false;
+                }
                 rawData.rawDataLength = 3 + length / 2;
                 rawData.deviceType = dataType;
                 rawData.min = min;
