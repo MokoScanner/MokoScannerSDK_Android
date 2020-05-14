@@ -87,6 +87,7 @@ public class ScanFilterActivity extends BaseActivity {
     private boolean isFilterRawDataOpen;
     private MQTTConfig appMqttConfig;
     private MokoService mokoService;
+    private boolean isGetData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,10 +150,12 @@ public class ScanFilterActivity extends BaseActivity {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
+                    isGetData = false;
                     dismissLoadingProgressDialog();
                     ScanFilterActivity.this.finish();
                 }
             }, 30 * 1000);
+            isGetData = true;
             getFilterRSSI();
             getFilterName();
             getFilterMac();
@@ -199,6 +202,8 @@ public class ScanFilterActivity extends BaseActivity {
                 final String topic = intent.getStringExtra(MokoConstants.EXTRA_MQTT_RECEIVE_TOPIC);
                 byte[] receive = intent.getByteArrayExtra(MokoConstants.EXTRA_MQTT_RECEIVE_MESSAGE);
                 int header = receive[0] & 0xFF;
+                if (!isGetData)
+                    return;
                 if (header == 0x19)// 蓝牙过滤RSSI
                 {
                     int length = receive[1] & 0xFF;
@@ -255,6 +260,7 @@ public class ScanFilterActivity extends BaseActivity {
                     if (mMokoDevice.uniqueId.equals(new String(id))) {
                         dismissLoadingProgressDialog();
                         mHandler.removeMessages(0);
+                        isGetData = false;
                         byte[] dataLengthBytes = Arrays.copyOfRange(receive, 2 + length, 4 + length);
                         int dataLength = MokoUtils.toInt(dataLengthBytes);
                         if (dataLength == 0) {
@@ -467,7 +473,7 @@ public class ScanFilterActivity extends BaseActivity {
                     return false;
                 if (min > 0) {
                     int interval = max - min;
-                    if (interval > 0 && length != ((interval + 1) * 2))
+                    if (length != ((interval + 1) * 2))
                         return false;
                 }
                 rawData.rawDataLength = 3 + length / 2;
