@@ -326,6 +326,12 @@ public class MoreActivity extends BaseActivity {
         startActivity(i);
     }
 
+    public void dataReportSetting(View view) {
+        Intent i = new Intent(MoreActivity.this, DataReportSettingActivity.class);
+        i.putExtra(AppConstants.EXTRA_KEY_DEVICE, mokoDevice);
+        startActivity(i);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();

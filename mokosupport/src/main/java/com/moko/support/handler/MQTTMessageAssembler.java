@@ -399,4 +399,35 @@ public class MQTTMessageAssembler {
         LogModule.e("app_to_device--->" + MokoUtils.bytesToHexString(b));
         return b;
     }
+
+    public static byte[] assembleReadDataReportInterval(String id) {
+        byte[] dataBytes = id.getBytes();
+        int dataLength = dataBytes.length;
+        byte[] b = new byte[dataLength + 4];
+        b[0] = 0x1e;
+        b[1] = (byte) dataLength;
+        for (int i = 0; i < dataLength; i++) {
+            b[i + 2] = dataBytes[i];
+        }
+        b[dataLength + 2] = 0;
+        b[dataLength + 3] = 0;
+        LogModule.e("app_to_device--->" + MokoUtils.bytesToHexString(b));
+        return b;
+    }
+
+    public static byte[] assembleWriteDataReportInterval(String id, int interval) {
+        byte[] dataBytes = id.getBytes();
+        int dataLength = dataBytes.length;
+        byte[] b = new byte[dataLength + 5];
+        b[0] = 0x30;
+        b[1] = (byte) dataLength;
+        for (int i = 0; i < dataLength; i++) {
+            b[i + 2] = dataBytes[i];
+        }
+        b[dataLength + 2] = 0;
+        b[dataLength + 3] = 1;
+        b[dataLength + 4] = (byte) interval;
+        LogModule.e("app_to_device--->" + MokoUtils.bytesToHexString(b));
+        return b;
+    }
 }

@@ -27,18 +27,12 @@ public class AboutActivity extends BaseActivity {
     }
 
     public void openURL(View view) {
-        Uri uri = Uri.parse(getString(R.string.about_moko_url));
+        Uri uri = Uri.parse("https://" + getString(R.string.company_website));
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         startActivity(intent);
     }
 
     public void back(View view) {
         finish();
-    }
-
-    public void companyUrl(View view) {
-        Uri uri = Uri.parse("https://" + getString(R.string.company_website));
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        startActivity(intent);
     }
 }
