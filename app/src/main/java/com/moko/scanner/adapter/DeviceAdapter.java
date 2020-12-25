@@ -12,7 +12,7 @@ import com.moko.scanner.R;
 import com.moko.scanner.base.BaseAdapter;
 import com.moko.scanner.entity.MokoDevice;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 
@@ -72,11 +72,11 @@ public class DeviceAdapter extends BaseAdapter<MokoDevice> {
     }
 
     static class DeviceViewHolder extends ViewHolder {
-        @Bind(R.id.tv_device_name)
+        @BindView(R.id.tv_device_name)
         TextView tvDeviceName;
-        @Bind(R.id.tv_device_status)
+        @BindView(R.id.tv_device_status)
         TextView tvDeviceStatus;
-        @Bind(R.id.rl_device_detail)
+        @BindView(R.id.rl_device_detail)
         RelativeLayout rlDeviceDetail;
 
         public DeviceViewHolder(View convertView) {

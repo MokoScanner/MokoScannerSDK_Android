@@ -22,16 +22,16 @@ import com.moko.scanner.utils.ToastUtils;
 
 import java.io.File;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class OnewaySSLFragment extends Fragment {
 
     private static final String TAG = OnewaySSLFragment.class.getSimpleName();
-    @Bind(R.id.tv_ca_file)
+    @BindView(R.id.tv_ca_file)
     TextView tvCaFile;
-    @Bind(R.id.iv_delete)
+    @BindView(R.id.iv_delete)
     ImageView ivDelete;
 
 
@@ -76,13 +76,6 @@ public class OnewaySSLFragment extends Fragment {
     public void onPause() {
         Log.i(TAG, "onPause: ");
         super.onPause();
-    }
-
-    @Override
-    public void onDestroyView() {
-        Log.i(TAG, "onDestroyView: ");
-        super.onDestroyView();
-        ButterKnife.unbind(this);
     }
 
     @Override

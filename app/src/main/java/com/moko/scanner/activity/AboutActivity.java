@@ -10,12 +10,12 @@ import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.utils.Utils;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class AboutActivity extends BaseActivity {
 
-    @Bind(R.id.tv_soft_version)
+    @BindView(R.id.tv_soft_version)
     TextView tvSoftVersion;
 
     @Override

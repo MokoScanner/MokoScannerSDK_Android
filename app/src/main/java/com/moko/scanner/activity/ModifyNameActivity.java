@@ -18,7 +18,7 @@ import com.moko.scanner.db.DBTools;
 import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.utils.ToastUtils;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
@@ -30,7 +30,7 @@ import butterknife.ButterKnife;
 public class ModifyNameActivity extends BaseActivity {
     public static String TAG = "ModifyNameActivity";
 
-    @Bind(R.id.et_nick_name)
+    @BindView(R.id.et_nick_name)
     EditText etNickName;
     private MokoDevice device;
 

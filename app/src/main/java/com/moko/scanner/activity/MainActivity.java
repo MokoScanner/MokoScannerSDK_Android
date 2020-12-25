@@ -36,7 +36,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
@@ -47,11 +47,11 @@ import butterknife.ButterKnife;
  */
 public class MainActivity extends BaseActivity implements DeviceAdapter.AdapterClickListener {
 
-    @Bind(R.id.rl_empty)
+    @BindView(R.id.rl_empty)
     RelativeLayout rlEmpty;
-    @Bind(R.id.lv_device_list)
+    @BindView(R.id.lv_device_list)
     ListView lvDeviceList;
-    @Bind(R.id.tv_title)
+    @BindView(R.id.tv_title)
     TextView tvTitle;
     private ArrayList<MokoDevice> devices;
     private DeviceAdapter adapter;

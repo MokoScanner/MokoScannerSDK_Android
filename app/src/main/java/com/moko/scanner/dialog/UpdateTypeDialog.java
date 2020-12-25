@@ -10,13 +10,13 @@ import com.moko.scanner.view.WheelView;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class UpdateTypeDialog extends MokoBaseDialog {
 
-    @Bind(R.id.wv_update_type)
+    @BindView(R.id.wv_update_type)
     WheelView wvUpdateType;
     private int selected;
 
@@ -44,12 +44,6 @@ public class UpdateTypeDialog extends MokoBaseDialog {
     @Override
     public float getDimAmount() {
         return 0.7f;
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        ButterKnife.unbind(this);
     }
 
     @OnClick({R.id.tv_cancel, R.id.tv_confirm})

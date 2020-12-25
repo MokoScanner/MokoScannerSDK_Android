@@ -32,14 +32,14 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.Arrays;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class DataReportSettingActivity extends BaseActivity {
 
 
-    @Bind(R.id.et_report_interval)
+    @BindView(R.id.et_report_interval)
     EditText etReportInterval;
     private MokoDevice mMokoDevice;
     private MQTTConfig appMqttConfig;

@@ -43,7 +43,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
@@ -51,29 +51,29 @@ public class ScanFilterActivity extends BaseActivity {
 
     private final String FILTER_ASCII = "\\A\\p{ASCII}*\\z";
 
-    @Bind(R.id.tv_device_name)
+    @BindView(R.id.tv_device_name)
     TextView tvDeviceName;
-    @Bind(R.id.sb_rssi)
+    @BindView(R.id.sb_rssi)
     SeekBar sbRssi;
-    @Bind(R.id.tv_rssi)
+    @BindView(R.id.tv_rssi)
     TextView tvRssi;
-    @Bind(R.id.et_filter_name)
+    @BindView(R.id.et_filter_name)
     EditText etFilterName;
-    @Bind(R.id.ll_rssi)
+    @BindView(R.id.ll_rssi)
     LinearLayout llRssi;
-    @Bind(R.id.iv_name_filter)
+    @BindView(R.id.iv_name_filter)
     ImageView ivNameFilter;
-    @Bind(R.id.iv_mac_filter)
+    @BindView(R.id.iv_mac_filter)
     ImageView ivMacFilter;
-    @Bind(R.id.et_filter_mac)
+    @BindView(R.id.et_filter_mac)
     EditText etFilterMac;
-    @Bind(R.id.iv_raw_data_filter)
+    @BindView(R.id.iv_raw_data_filter)
     ImageView ivRawDataFilter;
-    @Bind(R.id.iv_raw_data_del)
+    @BindView(R.id.iv_raw_data_del)
     ImageView ivRawDataDel;
-    @Bind(R.id.iv_raw_data_add)
+    @BindView(R.id.iv_raw_data_add)
     ImageView ivRawDataAdd;
-    @Bind(R.id.ll_raw_data_filter)
+    @BindView(R.id.ll_raw_data_filter)
     LinearLayout llRawDataFilter;
     private MokoDevice mMokoDevice;
     private int mPublishType;
@@ -280,10 +280,10 @@ public class ScanFilterActivity extends BaseActivity {
 
                         for (int i = 0, l = dataBytes.length; i < l; ) {
                             View v = LayoutInflater.from(ScanFilterActivity.this).inflate(R.layout.item_raw_data_filter, llRawDataFilter, false);
-                            EditText etDataType = ButterKnife.findById(v, R.id.et_data_type);
-                            EditText etMin = ButterKnife.findById(v, R.id.et_min);
-                            EditText etMax = ButterKnife.findById(v, R.id.et_max);
-                            EditText etRawData = ButterKnife.findById(v, R.id.et_raw_data);
+                            EditText etDataType = v.findViewById(R.id.et_data_type);
+                            EditText etMin = v.findViewById(R.id.et_min);
+                            EditText etMax = v.findViewById(R.id.et_max);
+                            EditText etRawData = v.findViewById(R.id.et_raw_data);
                             int filterLength = dataBytes[i] & 0xFF;
                             i++;
                             String type = MokoUtils.byte2HexString(dataBytes[i]);
@@ -436,10 +436,10 @@ public class ScanFilterActivity extends BaseActivity {
             for (int i = 0; i < count; i++) {
                 FilterRawData rawData = new FilterRawData();
                 View v = llRawDataFilter.getChildAt(i);
-                EditText etDataType = ButterKnife.findById(v, R.id.et_data_type);
-                EditText etMin = ButterKnife.findById(v, R.id.et_min);
-                EditText etMax = ButterKnife.findById(v, R.id.et_max);
-                EditText etRawData = ButterKnife.findById(v, R.id.et_raw_data);
+                EditText etDataType = v.findViewById(R.id.et_data_type);
+                EditText etMin = v.findViewById(R.id.et_min);
+                EditText etMax = v.findViewById(R.id.et_max);
+                EditText etRawData = v.findViewById(R.id.et_raw_data);
                 final String dataTypeStr = etDataType.getText().toString();
                 final String minStr = etMin.getText().toString();
                 final String maxStr = etMax.getText().toString();

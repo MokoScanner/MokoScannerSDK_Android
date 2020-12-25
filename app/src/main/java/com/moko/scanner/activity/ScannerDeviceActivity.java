@@ -34,7 +34,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
@@ -42,9 +42,9 @@ import butterknife.OnClick;
 public class ScannerDeviceActivity extends BaseActivity implements MokoScanDeviceCallback, BaseQuickAdapter.OnItemClickListener {
 
 
-    @Bind(R.id.iv_refresh)
+    @BindView(R.id.iv_refresh)
     ImageView ivRefresh;
-    @Bind(R.id.rv_devices)
+    @BindView(R.id.rv_devices)
     RecyclerView rvDevices;
     private Animation animation = null;
     private MokoBlueService mMokoService;

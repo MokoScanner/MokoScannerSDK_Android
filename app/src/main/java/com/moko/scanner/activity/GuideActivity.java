@@ -20,7 +20,7 @@ import com.moko.scanner.R;
 import com.moko.scanner.base.BaseActivity;
 import com.moko.scanner.utils.Utils;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
@@ -31,7 +31,7 @@ import butterknife.ButterKnife;
  */
 public class GuideActivity extends BaseActivity {
 
-    @Bind(R.id.iv_logo)
+    @BindView(R.id.iv_logo)
     ImageView ivLogo;
 
     @Override

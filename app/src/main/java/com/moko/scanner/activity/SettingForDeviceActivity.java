@@ -17,7 +17,7 @@ import com.moko.scanner.entity.MokoDevice;
 import com.moko.scanner.utils.SPUtiles;
 import com.moko.support.MokoConstants;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 /**
@@ -29,29 +29,29 @@ import butterknife.ButterKnife;
 public class SettingForDeviceActivity extends BaseActivity {
 
     public static String TAG = "SettingForDeviceActivity";
-    @Bind(R.id.tv_host)
+    @BindView(R.id.tv_host)
     TextView tvHost;
-    @Bind(R.id.tv_port)
+    @BindView(R.id.tv_port)
     TextView tvPort;
-    @Bind(R.id.tv_clean_session)
+    @BindView(R.id.tv_clean_session)
     TextView tvCleanSession;
-    @Bind(R.id.tv_user_name)
+    @BindView(R.id.tv_user_name)
     TextView tvUserName;
-    @Bind(R.id.tv_password)
+    @BindView(R.id.tv_password)
     TextView tvPassword;
-    @Bind(R.id.tv_qos)
+    @BindView(R.id.tv_qos)
     TextView tvQos;
-    @Bind(R.id.tv_keep_alive)
+    @BindView(R.id.tv_keep_alive)
     TextView tvKeepAlive;
-    @Bind(R.id.tv_client_id)
+    @BindView(R.id.tv_client_id)
     TextView tvClientId;
-    @Bind(R.id.tv_device_id)
+    @BindView(R.id.tv_device_id)
     TextView tvDeviceId;
-    @Bind(R.id.tv_connect_mode)
+    @BindView(R.id.tv_connect_mode)
     TextView tvConnectMode;
-    @Bind(R.id.tv_subscribe_topic)
+    @BindView(R.id.tv_subscribe_topic)
     TextView tvSubscribeTopic;
-    @Bind(R.id.tv_publish_topic)
+    @BindView(R.id.tv_publish_topic)
     TextView tvPublishTopic;
     private MokoDevice mokoDevice;
 

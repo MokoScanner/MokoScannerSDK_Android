@@ -32,19 +32,19 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.Arrays;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class LEDSettingActivity extends BaseActivity {
 
-    @Bind(R.id.cb_ble_broadcast)
+    @BindView(R.id.cb_ble_broadcast)
     CheckBox cbBleBroadcast;
-    @Bind(R.id.cb_ble_connected)
+    @BindView(R.id.cb_ble_connected)
     CheckBox cbBleConnected;
-    @Bind(R.id.cb_server_connecting)
+    @BindView(R.id.cb_server_connecting)
     CheckBox cbServerConnecting;
-    @Bind(R.id.cb_server_connected)
+    @BindView(R.id.cb_server_connected)
     CheckBox cbServerConnected;
     private MokoDevice mMokoDevice;
     private MQTTConfig appMqttConfig;

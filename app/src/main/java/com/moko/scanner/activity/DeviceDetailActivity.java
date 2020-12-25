@@ -44,22 +44,22 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class DeviceDetailActivity extends BaseActivity {
-    @Bind(R.id.tv_device_name)
+    @BindView(R.id.tv_device_name)
     TextView tvDeviceName;
-    @Bind(R.id.iv_scan_switch)
+    @BindView(R.id.iv_scan_switch)
     ImageView ivScanSwitch;
-    @Bind(R.id.tv_scan_device_total)
+    @BindView(R.id.tv_scan_device_total)
     TextView tvScanDeviceTotal;
-    @Bind(R.id.rv_devices)
+    @BindView(R.id.rv_devices)
     RecyclerView rvDevices;
-    @Bind(R.id.et_scan_interval)
+    @BindView(R.id.et_scan_interval)
     EditText etScanInterval;
-    @Bind(R.id.ll_scan_interval)
+    @BindView(R.id.ll_scan_interval)
     LinearLayout llScanInterval;
     private boolean mScanSwitch;
     private int mScanInterval;
